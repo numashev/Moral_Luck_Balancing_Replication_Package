@@ -1,0 +1,4993 @@
+---
+title: "Moral and Luck Balancing"
+author: "Philip Grossman, Alexandros Karakostas, Nicholas Umashev"
+format:
+  html:
+    toc: true
+    toc-depth: 3a
+    code-fold: true
+  pdf:
+    toc: true
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+# Packages and Directories
+
+## Packages 
+
+```{r}
+#| output: false
+options(repos = c(CRAN = "https://cloud.r-project.org/"))
+
+requiredPackages <- c(
+  'tidyverse',
+  'readxl',
+  'haven',
+  'janitor',
+  'modelsummary',
+  'broom',
+  'ggplot2',
+  'patchwork',
+  'knitr',
+  'tinytable',
+  'tibble'
+)
+for (p in requiredPackages) {
+  if (!require(p, character.only = TRUE)) {
+    install.packages(p)
+  }
+  library(p, character.only = TRUE)
+}
+```
+
+## Functions
+
+```{r}
+save_tinytable_body <- function(tt, file) {
+  tmp <- tempfile(fileext = ".tex")
+
+  tinytable::save_tt(
+    tt,
+    output = tmp
+  )
+
+  tex <- readLines(tmp, warn = FALSE)
+
+  # Find the actual table body environment used by tinytable
+  start <- grep(
+    "\\\\begin\\{(tblr|talltblr|longtblr|tabular)\\}",
+    tex,
+    perl = TRUE
+  )[1]
+
+  end <- tail(
+    grep(
+      "\\\\end\\{(tblr|talltblr|longtblr|tabular)\\}",
+      tex,
+      perl = TRUE
+    ),
+    1
+  )
+
+  if (is.na(start) || is.na(end)) {
+    stop("Could not find a tblr/talltblr/longtblr/tabular environment.")
+  }
+
+  tex_body <- tex[start:end]
+
+  writeLines(tex_body, con = file)
+}
+```
+
+## Themes
+
+```{r}
+base_theme <- theme_classic(base_size = 14) +
+  theme(
+    plot.background = element_rect(fill = "#dfe8ea", color = NA),
+    panel.background = element_rect(fill = "white", color = NA),
+    panel.grid.major.y = element_line(color = "#d9d9d9", linewidth = 0.6),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor = element_blank(),
+    axis.line = element_line(color = "black", linewidth = 0.5),
+    axis.ticks = element_line(color = "black"),
+    axis.text = element_text(color = "black"),
+    axis.title = element_text(color = "black"),
+    plot.title = element_text(hjust = 0.5, face = "plain", color = "#2c3e63"),
+    legend.position = "bottom",
+    legend.direction = "horizontal",
+    legend.title = element_blank(),
+    legend.background = element_rect(fill = "white", color = "grey40"),
+    legend.key = element_rect(fill = "white", color = NA),
+    legend.box.background = element_blank()
+  )
+```
+
+## Directories
+
+```{r}
+root_dir <- "/Users/numashev/Documents/Research/Moral Balancing"
+
+data_dir <- file.path(root_dir, "Data")
+writing_dir <- file.path(root_dir, "Writing")
+```
+
+# Dataset Generation
+
+## Import data
+
+```{r}
+session_numbers <- 1:26
+
+df <- map_dfr(session_numbers, function(num) {
+  file_path <- file.path(data_dir, paste0("Session", num, ".xlsx"))
+
+  if (!file.exists(file_path)) {
+    warning("Missing file: ", file_path)
+    return(NULL)
+  }
+
+  read_excel(file_path, sheet = "Session1") %>%
+    select(-any_of(c("prolificID", "Consent", "participant"))) %>%
+    rename(treatment = Traitement) %>%
+    mutate(
+      session2 = num,
+      participant = row_number(),
+      across(everything(), as.character)
+    )
+})
+```
+
+## Rename and Convert Variables
+
+```{r}
+# Variables to convert from character to numeric
+numeric_vars <- c(
+  "session",
+  "participant",
+  "payoffLuck",
+  "Luck_payoff",
+  "Lie_First_Die",
+  "Lie_Second_Die",
+  "Lie_Sum_Dice",
+  "amount_give",
+  "amount_take",
+  "payoff",
+  "SNE_order",
+  paste0("SNE_Set1_Action", 1:7),
+  paste0("SNE_Set2_Action", 1:7),
+  paste0("SNE_Set3_Action", 1:7),
+  paste0("Quiz1_Set1_", 1:9),
+  paste0("Quiz1_Set2_", 1:9),
+  paste0("Quiz1_Set3_", 1:9),
+  paste0("Quiz2_", 1:10),
+  paste0("DASS21_", 1:21),
+  "age",
+  "sexe",
+  "english",
+  "student",
+  "economy",
+  "Bsl_payoff"
+)
+
+df <- df %>%
+  mutate(across(any_of(numeric_vars), ~ suppressWarnings(as.numeric(.x)))) %>%
+  rename(
+    Dice_Sum = Lie_Sum_Dice,
+    Dice_First = Lie_First_Die,
+    Dice_Second = Lie_Second_Die,
+    sex = sexe, # 0=Male, 1=Female, 2=Other, 3=prefer not to say
+    SocialApp_Give_00 = SNE_Set1_Action1,
+    SocialApp_Give_05 = SNE_Set1_Action2,
+    SocialApp_Give_10 = SNE_Set1_Action3,
+    SocialApp_Give_15 = SNE_Set1_Action4,
+    SocialApp_Give_20 = SNE_Set1_Action5,
+    SocialApp_Give_25 = SNE_Set1_Action6,
+    SocialApp_Give_30 = SNE_Set1_Action7,
+    SocialApp_Take_00 = SNE_Set2_Action1,
+    SocialApp_Take_05 = SNE_Set2_Action2,
+    SocialApp_Take_10 = SNE_Set2_Action3,
+    SocialApp_Take_15 = SNE_Set2_Action4,
+    SocialApp_Take_20 = SNE_Set2_Action5,
+    SocialApp_Take_25 = SNE_Set2_Action6,
+    SocialApp_Take_30 = SNE_Set2_Action7,
+    SocialApp_DiceLie_30 = SNE_Set3_Action1,
+    SocialApp_DiceLie_25 = SNE_Set3_Action2,
+    SocialApp_DiceLie_20 = SNE_Set3_Action3,
+    SocialApp_DiceLie_15 = SNE_Set3_Action4,
+    SocialApp_DiceLie_10 = SNE_Set3_Action5,
+    SocialApp_DiceNoLie = SNE_Set3_Action6,
+    SocialApp_DiceLie_NoGain = SNE_Set3_Action7
+  )
+
+# Short Dark Triad variable names
+dark_names <- c(
+  paste0("SDarkT_Mach_", 1:9),
+  paste0("SDarkT_Narc_", 1:9),
+  paste0("SDarkT_Psych_", 1:9)
+)
+
+quiz1_names <- c(
+  paste0("Quiz1_Set1_", 1:9),
+  paste0("Quiz1_Set2_", 1:9),
+  paste0("Quiz1_Set3_", 1:9)
+)
+
+names(df)[match(quiz1_names, names(df))] <- dark_names[seq_along(quiz1_names)]
+
+# Short Big Five names
+big5_names <- paste0("SBig5_", 1:10)
+quiz2_names <- paste0("Quiz2_", 1:10)
+
+names(df)[match(quiz2_names, names(df))] <- big5_names[seq_along(quiz2_names)]
+
+# Female and Clustering
+
+df <- df %>%
+  mutate(
+    Female = if_else(sex == 1, 1L, 0L),
+    clusterind = as.integer(factor(paste(participant, session, sep = "_")))
+  )
+```
+
+##  Create Variables for Payoffs and Treatments 
+
+```{r}
+# Recode treatment names
+
+df <- df %>%
+  mutate(
+    treatment = recode(
+      treatment,
+      "Lie_Prosocial" = "Lie_Giving",
+      "Lie_Antisocial" = "Lie_Taking",
+      "Luck_Prosocial" = "Luck_Giving",
+      "Luck_Antisocial" = "Luck_Taking",
+      "Bsl_Prosocial" = "Bsl_Giving",
+      "Bsl_Antisocial" = "Bsl_Taking",
+      "Prosocial_Lie" = "Giving_Lie",
+      "Antisocial_Lie" = "Taking_Lie"
+    )
+  )
+
+# Create other variables
+
+lie_treatments <- c(
+  "Lie_Giving",
+  "Lie_Taking",
+  "Giving_Lie",
+  "Taking_Lie"
+)
+
+bsl_treatments <- c("Bsl_Giving", "Bsl_Taking")
+luck_treatments <- c("Luck_Giving", "Luck_Taking")
+
+Giving_treatments <- c(
+  "Bsl_Giving",
+  "Lie_Giving",
+  "Luck_Giving",
+  "Giving_Lie"
+)
+
+Taking_treatments <- c(
+  "Bsl_Taking",
+  "Lie_Taking",
+  "Luck_Taking",
+  "Taking_Lie"
+)
+
+# Task 1 earnings
+df <- df %>%
+  mutate(
+    task1_earnings = case_when(
+      Dice_Sum == 7 ~ 0.5,
+      Dice_Sum %in% c(6, 8) ~ 1,
+      Dice_Sum %in% c(5, 9) ~ 1.5,
+      Dice_Sum %in% c(4, 10) ~ 2,
+      Dice_Sum %in% c(3, 11) ~ 2.5,
+      Dice_Sum %in% c(2, 12) ~ 3,
+      TRUE ~ NA_real_
+    ),
+    Luck_payoff = if_else(
+      is.na(Luck_payoff) & !is.na(payoffLuck),
+      payoffLuck,
+      Luck_payoff
+    ),
+    task1_earnings = case_when(
+      treatment %in% luck_treatments ~ Luck_payoff,
+      treatment %in% bsl_treatments ~ Bsl_payoff,
+      TRUE ~ task1_earnings
+    )
+  )
+
+# Task 2 Earnings
+df <- df %>%
+  filter(!is.na(treatment), treatment != "") %>%
+  mutate(
+    task2_earnings = case_when(
+      treatment %in% Giving_treatments ~ 3 - amount_give,
+      treatment %in% Taking_treatments ~ amount_take,
+      TRUE ~ NA_real_
+    )
+  )
+
+## Treatment Identifiers
+df <- df %>%
+  mutate(
+    BSL_treatment = as.integer(treatment %in% bsl_treatments),
+    LIE_treatment = as.integer(treatment %in% lie_treatments),
+    LUCK_treatment = as.integer(treatment %in% luck_treatments),
+    Giving_frame = as.integer(treatment %in% Giving_treatments),
+    Taking_frame = as.integer(treatment %in% Taking_treatments),
+
+    treatment_num = case_when(
+      treatment == "Bsl_Giving" ~ 1,
+      treatment == "Luck_Giving" ~ 2,
+      treatment == "Lie_Giving" ~ 3,
+      treatment == "Bsl_Taking" ~ 4,
+      treatment == "Luck_Taking" ~ 5,
+      treatment == "Lie_Taking" ~ 6,
+      treatment == "Giving_Lie" ~ 7,
+      treatment == "Taking_Lie" ~ 8,
+      TRUE ~ NA_real_
+    ),
+
+    Lie_TaskRnd = case_when(
+      treatment %in% c("Lie_Giving", "Lie_Taking") ~ 1,
+      treatment %in% c("Giving_Lie", "Taking_Lie") ~ 2,
+      TRUE ~ NA_real_
+    ),
+
+    TreatmentSet = case_when(
+      treatment %in%
+        c(
+          "Bsl_Giving",
+          "Luck_Giving",
+          "Lie_Giving",
+          "Bsl_Taking",
+          "Luck_Taking",
+          "Lie_Taking"
+        ) ~ 1,
+      treatment %in% c("Giving_Lie", "Taking_Lie") ~ 2,
+      TRUE ~ NA_real_
+    )
+  )
+
+df <- df %>%
+  mutate(
+    treatment_label = factor(
+      treatment,
+      levels = c(
+        "Bsl_Giving",
+        "Luck_Giving",
+        "Lie_Giving",
+        "Bsl_Taking",
+        "Luck_Taking",
+        "Lie_Taking",
+        "Giving_Lie",
+        "Taking_Lie"
+      ),
+      labels = c(
+        "Base–Give",
+        "Luck-Give",
+        "Lie–Give",
+        "Base–Take",
+        "Luck-Take",
+        "Lie–Take",
+        "Give–Lie",
+        "Take–Lie"
+      )
+    )
+  )
+```
+
+## Create Social Appropriateness Variables
+
+```{r}
+df <- df %>%
+  mutate(
+    SocialApp_T2Choice = case_when(
+      !is.na(amount_give) & amount_give < 0.5 ~ SocialApp_Give_00,
+      !is.na(amount_give) &
+        amount_give < 1.0 &
+        amount_give >= 0.5 ~ SocialApp_Give_05,
+      !is.na(amount_give) &
+        amount_give < 1.5 &
+        amount_give >= 1.0 ~ SocialApp_Give_10,
+      !is.na(amount_give) &
+        amount_give < 2.0 &
+        amount_give >= 1.5 ~ SocialApp_Give_15,
+      !is.na(amount_give) &
+        amount_give < 2.5 &
+        amount_give >= 2.0 ~ SocialApp_Give_20,
+      !is.na(amount_give) &
+        amount_give < 3.0 &
+        amount_give >= 2.5 ~ SocialApp_Give_25,
+      !is.na(amount_give) & amount_give == 3.0 ~ SocialApp_Give_30,
+
+      !is.na(amount_take) & amount_take < 0.5 ~ SocialApp_Take_00,
+      !is.na(amount_take) &
+        amount_take < 1.0 &
+        amount_take >= 0.5 ~ SocialApp_Take_05,
+      !is.na(amount_take) &
+        amount_take < 1.5 &
+        amount_take >= 1.0 ~ SocialApp_Take_10,
+      !is.na(amount_take) &
+        amount_take < 2.0 &
+        amount_take >= 1.5 ~ SocialApp_Take_15,
+      !is.na(amount_take) &
+        amount_take < 2.5 &
+        amount_take >= 2.0 ~ SocialApp_Take_20,
+      !is.na(amount_take) &
+        amount_take < 3.0 &
+        amount_take >= 2.5 ~ SocialApp_Take_25,
+      !is.na(amount_take) & amount_take == 3.0 ~ SocialApp_Take_30,
+      TRUE ~ NA_real_
+    ),
+
+    SocialApp00_T2Environ = if_else(
+      Giving_frame == 1,
+      SocialApp_Give_30,
+      SocialApp_Take_00
+    ),
+    SocialApp05_T2Environ = if_else(
+      Giving_frame == 1,
+      SocialApp_Give_25,
+      SocialApp_Take_05
+    ),
+    SocialApp10_T2Environ = if_else(
+      Giving_frame == 1,
+      SocialApp_Give_20,
+      SocialApp_Take_10
+    ),
+    SocialApp15_T2Environ = if_else(
+      Giving_frame == 1,
+      SocialApp_Give_15,
+      SocialApp_Take_15
+    ),
+    SocialApp20_T2Environ = if_else(
+      Giving_frame == 1,
+      SocialApp_Give_10,
+      SocialApp_Take_20
+    ),
+    SocialApp25_T2Environ = if_else(
+      Giving_frame == 1,
+      SocialApp_Give_05,
+      SocialApp_Take_25
+    ),
+    SocialApp30_T2Environ = if_else(
+      Giving_frame == 1,
+      SocialApp_Give_00,
+      SocialApp_Take_30
+    )
+  )
+```
+
+## Create Personality Variables
+
+```{r}
+reverse_1_to_5 <- function(x) {
+  if_else(!is.na(x), 6 - x, NA_real_)
+}
+
+df <- df %>%
+  mutate(
+    Machiavel = rowMeans(across(paste0("SDarkT_Mach_", 1:9)), na.rm = TRUE),
+
+    SDarkT_Narc_2 = reverse_1_to_5(SDarkT_Narc_2),
+    SDarkT_Narc_6 = reverse_1_to_5(SDarkT_Narc_6),
+    SDarkT_Narc_8 = reverse_1_to_5(SDarkT_Narc_8),
+    Narciss = rowMeans(across(paste0("SDarkT_Narc_", 1:9)), na.rm = TRUE),
+
+    SDarkT_Psych_2 = reverse_1_to_5(SDarkT_Psych_2),
+    SDarkT_Psych_7 = reverse_1_to_5(SDarkT_Psych_7),
+    Psychop = rowMeans(across(paste0("SDarkT_Psych_", 1:9)), na.rm = TRUE),
+
+    SBig5_1 = reverse_1_to_5(SBig5_1),
+    SBig5_3 = reverse_1_to_5(SBig5_3),
+    SBig5_4 = reverse_1_to_5(SBig5_4),
+    SBig5_5 = reverse_1_to_5(SBig5_5),
+    SBig5_7 = reverse_1_to_5(SBig5_7),
+
+    Extraversion = (SBig5_1 + SBig5_6) / 2,
+    Agreeableness = (SBig5_2 + SBig5_7) / 2,
+    Conscientiousness = (SBig5_3 + SBig5_8) / 2,
+    Neuroticism = (SBig5_4 + SBig5_9) / 2,
+    Openness = (SBig5_5 + SBig5_10) / 2
+  )
+```
+
+## Factor Variables for Earnings
+
+```{r}
+df <- df %>%
+  mutate(
+    task1_earnings_factor = case_when(
+      task1_earnings == 0.5 ~ 1,
+      task1_earnings == 1.0 ~ 2,
+      task1_earnings == 1.5 ~ 3,
+      task1_earnings == 2.0 ~ 4,
+      task1_earnings == 2.5 ~ 5,
+      task1_earnings == 3.0 ~ 6,
+      TRUE ~ NA_real_
+    ),
+
+    task1_earnings_LMH = case_when(
+      task1_earnings %in% c(0.5, 1.0) ~ 1,
+      task1_earnings %in% c(1.5, 2.0) ~ 2,
+      task1_earnings %in% c(2.5, 3.0) ~ 3,
+      TRUE ~ NA_real_
+    ),
+
+    task2_earnings_factor = case_when(
+      task2_earnings == 0.0 ~ 0,
+      task2_earnings == 0.5 ~ 1,
+      task2_earnings == 1.0 ~ 2,
+      task2_earnings == 1.5 ~ 3,
+      task2_earnings == 2.0 ~ 4,
+      task2_earnings == 2.5 ~ 5,
+      task2_earnings == 3.0 ~ 6,
+      TRUE ~ NA_real_
+    )
+  )
+```
+
+## Pooling Dice Sum Variables and Adding Theoretical Frequencies
+
+```{r}
+df <- df %>%
+  mutate(
+    Theor_Sum_freq = case_when(
+      Dice_Sum == 7 ~ 16.6,
+      Dice_Sum %in% c(6, 8) ~ 13.8,
+      Dice_Sum %in% c(5, 9) ~ 11.1,
+      Dice_Sum %in% c(4, 10) ~ 8.3,
+      Dice_Sum %in% c(3, 11) ~ 5.5,
+      Dice_Sum %in% c(2, 12) ~ 2.7,
+      TRUE ~ NA_real_
+    ),
+
+    Dice_Sum_Pool_dumy = case_when(
+      Dice_Sum %in% c(2, 12) ~ 1,
+      Dice_Sum %in% c(3, 11) ~ 2,
+      Dice_Sum %in% c(4, 10) ~ 3,
+      Dice_Sum %in% c(5, 9) ~ 4,
+      Dice_Sum %in% c(6, 8) ~ 5,
+      Dice_Sum == 7 ~ 6,
+      TRUE ~ NA_real_
+    ),
+
+    Theor_Sum_Pool_freq = case_when(
+      Dice_Sum == 7 ~ 16.6,
+      Dice_Sum %in% c(6, 8) ~ 13.8 * 2,
+      Dice_Sum %in% c(5, 9) ~ 11.1 * 2,
+      Dice_Sum %in% c(4, 10) ~ 8.3 * 2,
+      Dice_Sum %in% c(3, 11) ~ 5.5 * 2,
+      Dice_Sum %in% c(2, 12) ~ 2.7 * 2,
+      TRUE ~ NA_real_
+    )
+  )
+```
+
+## Remove Unused Variables and Save
+
+```{r}
+df <- df %>%
+  select(
+    -any_of(c(
+      "amount_give",
+      "amount_take",
+      "payoffLuck",
+      "Bsl_payoff",
+      "participant.payoff",
+      "Charity_payoff",
+      "Lie_Time",
+      "Charity_Time",
+      "Lie_payoff",
+      "sex"
+    ))
+  )
+
+saveRDS(df, file.path(data_dir, "AppendedData-DataFinale.rds"))
+```
+
+# Data Analysis
+
+## Load Saved Dataset
+
+```{r}
+#| label: load-data
+# Load saved dataset (run Dataset Generation first if not yet saved)
+df <- readRDS(file.path(data_dir, "AppendedData-DataFinale.rds"))
+```
+
+## General Data Exploration
+
+### Descriptive Statistics General
+
+```{r}
+df %>%
+  filter(Lie_TaskRnd == 1) %>%
+  summarise(
+    across(
+      c(task1_earnings, task2_earnings, starts_with("SocialApp")),
+      list(
+        mean = ~ mean(.x, na.rm = TRUE),
+        sd = ~ sd(.x, na.rm = TRUE),
+        n = ~ sum(!is.na(.x))
+      ),
+      .names = "{.col}_{.fn}"
+    )
+  ) %>%
+  pivot_longer(everything()) %>%
+  kable()
+```
+
+### Descriptive Statistics Related to Balancing
+
+```{r}
+df %>%
+  filter(TreatmentSet == 1) %>%
+  group_by(treatment, task1_earnings) %>%
+  summarise(
+    mean_task2 = mean(task2_earnings, na.rm = TRUE),
+    sd_task2 = sd(task2_earnings, na.rm = TRUE),
+    n = sum(!is.na(task2_earnings)),
+    .groups = "drop"
+  ) %>%
+  arrange(treatment, task1_earnings) %>%
+  kable()
+```
+
+### Graph of Task 2 Earnings by Treatment
+
+```{r}
+task2_avg <- df %>%
+  group_by(
+    treatment_num,
+    treatment,
+    task1_earnings,
+    Giving_frame,
+    TreatmentSet
+  ) %>%
+  summarise(
+    task2_earnings_avg = mean(task2_earnings, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+p_task2_task1 <- task2_avg %>%
+  filter(TreatmentSet == 1) %>%
+  ggplot(aes(
+    factor(task1_earnings),
+    task2_earnings_avg,
+    fill = factor(treatment_num)
+  )) +
+  geom_col(position = "dodge") +
+  facet_wrap(~treatment, scales = "free_x") +
+  coord_cartesian(ylim = c(0, 2.5)) +
+  labs(
+    x = "Task 1 Earnings",
+    y = "Average Task 2 Earnings",
+    fill = "Treatment"
+  )
+
+p_task2_task1
+
+ggsave(
+  file.path(writing_dir, "Figures", "task2vtask1.pdf"),
+  p_task2_task1,
+  width = 10,
+  height = 6
+)
+```
+
+### OLS Regression on Task 2 Earnings Full Sample
+
+```{r}
+main_data <- df %>%
+  filter(TreatmentSet == 1)
+
+m1 <- lm(
+  task2_earnings ~ task1_earnings +
+    Giving_frame +
+    LIE_treatment +
+    LUCK_treatment,
+  data = main_data
+)
+
+m2 <- lm(
+  task2_earnings ~ task1_earnings +
+    I(task1_earnings^2) +
+    Giving_frame +
+    LIE_treatment +
+    LUCK_treatment +
+    task1_earnings:Giving_frame +
+    task1_earnings:LIE_treatment +
+    task1_earnings:LUCK_treatment,
+  data = main_data
+)
+
+m3 <- lm(
+  task2_earnings ~
+    task1_earnings +
+    I(task1_earnings^2) +
+    Giving_frame +
+    LIE_treatment +
+    LUCK_treatment +
+    task1_earnings:Giving_frame +
+    task1_earnings:LIE_treatment +
+    task1_earnings:LUCK_treatment +
+    I(task1_earnings^2):Giving_frame +
+    I(task1_earnings^2):LIE_treatment +
+    I(task1_earnings^2):LUCK_treatment,
+  data = main_data
+)
+
+m_soc1 <- lm(
+  task2_earnings ~
+    (task1_earnings + I(task1_earnings^2)) *
+    (Giving_frame + LIE_treatment + LUCK_treatment) +
+    SocialApp_T2Choice,
+  data = main_data
+)
+
+m_soc2 <- lm(
+  task2_earnings ~
+    (task1_earnings + I(task1_earnings^2)) *
+    (Giving_frame + LIE_treatment + LUCK_treatment) +
+    SocialApp00_T2Environ +
+    SocialApp05_T2Environ +
+    SocialApp10_T2Environ +
+    SocialApp15_T2Environ +
+    SocialApp20_T2Environ +
+    SocialApp25_T2Environ +
+    SocialApp30_T2Environ,
+  data = main_data
+)
+
+coef_map <- c(
+  "task1_earnings" = "Task 1 Earnings",
+  "Giving_frame" = "Giving Frame",
+  "LIE_treatment" = "Lie Treatment",
+  "LUCK_treatment" = "Luck Treatment",
+  "I(task1_earnings^2)" = "Task 1 Earnings$^2$",
+  "task1_earnings:Giving_frame" = "Giving Frame $\\times$ Task 1 Earnings",
+  "task1_earnings:LIE_treatment" = "Lie Treatment $\\times$ Task 1 Earnings",
+  "task1_earnings:LUCK_treatment" = "Luck Treatment $\\times$ Task 1 Earnings",
+  "I(task1_earnings^2):Giving_frame" = "Giving Frame $\\times$ Task 1 Earnings$^2$",
+  "I(task1_earnings^2):LIE_treatment" = "Lie Treatment $\\times$ Task 1 Earnings$^2$",
+  "I(task1_earnings^2):LUCK_treatment" = "Luck Treatment $\\times$ Task 1 Earnings$^2$",
+  "(Intercept)" = "Constant"
+)
+
+models <- list(
+  "(1)" = m1,
+  "(2)" = m2,
+  "(3)" = m3,
+  "(4)" = m_soc1,
+  "(5)" = m_soc2
+)
+
+add_rows <- tibble(
+  term = c(
+    "Social App. T2 Choice",
+    "Social App. T2 Frame"
+  ),
+  "(1)" = c("", ""),
+  "(2)" = c("", ""),
+  "(3)" = c("", ""),
+  "(4)" = c("$\\checkmark$", ""),
+  "(5)" = c("", "$\\checkmark$")
+)
+
+gof_map <- tibble(
+  raw = "nobs",
+  clean = "N",
+  fmt = 0
+)
+
+stars_custom <- c(
+  "*" = 0.10,
+  "**" = 0.05,
+  "***" = 0.01
+)
+
+Regress_General <- modelsummary(
+  models,
+  coef_map = coef_map,
+  add_rows = add_rows,
+  gof_map = gof_map,
+  stars = stars_custom,
+  estimate = "{estimate}{stars}",
+  statistic = "({std.error})",
+  escape = FALSE,
+  output = "tinytable"
+)
+
+Regress_General <- group_tt(
+  Regress_General,
+  j = list("T2 Earnings" = 2:6)
+)
+
+save_tinytable_body(
+  Regress_General,
+  file.path(writing_dir, "Tables", "Regress_General.tex")
+)
+
+Regress_General
+```
+
+## Moral Balancing
+
+### Dice Distribution Analysis
+
+#### Graphing Observed vs Theoretical Frequencies
+
+Non-Pooled Dice Graph
+
+```{r}
+dice_freq <- df %>%
+  filter(
+    treatment %in% lie_treatments,
+    Lie_TaskRnd == 1,
+    !is.na(Dice_Sum)
+  ) %>%
+  count(Dice_Sum, name = "n") %>%
+  mutate(Dice_Sum_freq = n / sum(n) * 100)
+
+theor_freq <- tibble(
+  Dice_Sum = 2:12,
+  Theor_Sum_freq = c(2.7, 5.5, 8.3, 11.1, 13.8, 16.6, 13.8, 11.1, 8.3, 5.5, 2.7)
+)
+
+p_dice <- ggplot() +
+  geom_col(
+    data = dice_freq,
+    aes(Dice_Sum, Dice_Sum_freq),
+    width = 0.8,
+    fill = "steelblue"
+  ) +
+  geom_point(
+    data = theor_freq,
+    aes(Dice_Sum, Theor_Sum_freq),
+    color = "purple",
+    size = 2
+  ) +
+  scale_x_continuous(breaks = 2:12) +
+  labs(
+    x = "Two Dice Sums",
+    y = "Frequency %",
+    caption = "Bars = observed; points = theoretical"
+  )
+
+p_dice
+
+ggsave(
+  file.path(writing_dir, "Figures", "dicefreq.pdf"),
+  p_dice,
+  width = 7,
+  height = 5
+)
+```
+
+Pooled Dice Graph
+
+```{r}
+pooled_freq <- df %>%
+  filter(
+    treatment %in% lie_treatments,
+    Lie_TaskRnd == 1,
+    !is.na(Dice_Sum_Pool_dumy)
+  ) %>%
+  count(Dice_Sum_Pool_dumy, name = "n") %>%
+  mutate(Dice_Sum_Pool_freq = n / sum(n) * 100)
+
+theor_pooled <- tibble(
+  Dice_Sum_Pool_dumy = 1:6,
+  Theor_Sum_Pool_freq = c(2.7 * 2, 5.5 * 2, 8.3 * 2, 11.1 * 2, 13.8 * 2, 16.6)
+)
+
+p_pooled <- ggplot() +
+  geom_col(
+    data = pooled_freq,
+    aes(
+      x = Dice_Sum_Pool_dumy,
+      y = Dice_Sum_Pool_freq,
+      fill = "Observed"
+    ),
+    width = 0.8
+  ) +
+  geom_point(
+    data = theor_pooled,
+    aes(
+      x = Dice_Sum_Pool_dumy,
+      y = Theor_Sum_Pool_freq,
+      color = "Theoretical"
+    ),
+    size = 5
+  ) +
+  scale_fill_manual(
+    name = NULL,
+    values = c("Observed" = "#4f7393")
+  ) +
+  scale_color_manual(
+    name = NULL,
+    values = c("Theoretical" = "purple4")
+  ) +
+  scale_x_continuous(
+    breaks = 1:6,
+    labels = c("2/12", "3/11", "4/10", "5/9", "6/8", "7"),
+    expand = expansion(mult = c(0.03, 0.03))
+  ) +
+  scale_y_continuous(
+    breaks = seq(0, 30, 5),
+    limits = c(0, 30),
+    expand = c(0, 0)
+  ) +
+  labs(
+    x = "Two Dice Sums",
+    y = "Frequency %"
+  ) +
+  theme_classic(base_size = 14) +
+  theme(
+    plot.background = element_rect(fill = "#eaf2f3", color = NA),
+    panel.background = element_rect(fill = "white", color = NA),
+
+    panel.grid.major.y = element_line(
+      color = "#d9d9d9",
+      linewidth = 0.8
+    ),
+    panel.grid.major.x = element_blank(),
+    panel.grid.minor = element_blank(),
+
+    axis.line = element_line(color = "black", linewidth = 0.6),
+    axis.ticks = element_line(color = "black", linewidth = 0.5),
+    axis.text = element_text(color = "black", size = 13),
+    axis.title = element_text(color = "black", size = 14),
+
+    # Stata-style legend
+    legend.position = "bottom",
+    legend.direction = "horizontal",
+    legend.box = "horizontal",
+    legend.box.background = element_rect(
+      fill = "white",
+      color = "black",
+      linewidth = 0.4
+    ),
+    legend.background = element_blank(),
+    legend.key = element_rect(fill = "white", color = NA),
+    legend.key.size = unit(0.6, "cm"),
+    legend.text = element_text(size = 12, color = "black"),
+    legend.margin = margin(4, 8, 4, 8),
+    plot.margin = margin(12, 18, 12, 18)
+  ) +
+  guides(
+    fill = guide_legend(
+      order = 1,
+      override.aes = list(
+        color = NA,
+        shape = NA
+      )
+    ),
+    color = guide_legend(
+      order = 2,
+      override.aes = list(
+        shape = 16,
+        size = 5
+      )
+    )
+  )
+
+
+p_pooled
+
+ggsave(
+  file.path(writing_dir, "Figures", "dicefreqpooled.pdf"),
+  p_pooled,
+  width = 7,
+  height = 5
+)
+```
+
+#### Statistical Tests 
+
+Distributional Differences (Kolmogorov-Smirnov)
+
+```{r}
+set.seed(42)
+
+# Sum of 2 Dice Comparisons
+dice_sum_sample <- df %>%
+  filter(Lie_TaskRnd == 1) %>%
+  pull(Dice_Sum) %>%
+  na.omit()
+
+dice_sum_theoretical <- sample(
+  1:6,
+  size = length(dice_sum_sample),
+  replace = TRUE
+) +
+  sample(1:6, size = length(dice_sum_sample), replace = TRUE)
+
+print(
+  ks.test(
+    dice_sum_sample,
+    dice_sum_theoretical #rnorm(length(dice_sum_sample), mean = 7, sd = 2.474873415) #distribution taken from https://towardsdatascience.com/modelling-the-probability-distributions-of-dice-b6ecf87b24ea
+  )
+)
+
+# First Dice Throw Comparisons
+dice_first_sample <- df %>%
+  filter(Lie_TaskRnd == 1) %>%
+  pull(Dice_First) %>%
+  na.omit()
+
+dice_first_theoretical <- sample(
+  1:6,
+  size = length(dice_first_sample),
+  replace = TRUE
+)
+
+print(
+  ks.test(dice_first_sample, dice_first_theoretical) #runif(length(dice_first_sample), min = 1, max = 6))
+)
+
+# Second Dice Throw Comparisons
+dice_second_sample <- df %>%
+  filter(Lie_TaskRnd == 1) %>%
+  pull(Dice_Second) %>%
+  na.omit()
+
+dice_second_theoretical <- sample(
+  1:6,
+  size = length(dice_second_sample),
+  replace = TRUE
+)
+
+print(
+  ks.test(
+    dice_second_sample,
+    dice_second_theoretical #runif(length(dice_second_sample), min = 1, max = 6)
+  )
+)
+```
+
+One-sided binomial fischer exact test to determine if the frequency of reporting 7, 2, 12, 3, and 11 two-die sums is higher than reporting other die-sums.
+
+```{r}
+# 2/12 reported
+observed_2_12 <- df %>%
+  filter(Lie_TaskRnd == 1, !is.na(Dice_Sum)) %>%
+  summarise(observed_2_12 = sum(Dice_Sum %in% c(2, 12))) %>%
+  pull(observed_2_12)
+
+print(fisher.test(
+  matrix(
+    c(observed_2_12, 20, 360 - observed_2_12, 340),
+    nrow = 2,
+    byrow = TRUE
+  ),
+  alternative = "greater"
+))
+
+# 3/11 reported
+observed_3_11 <- df %>%
+  filter(Lie_TaskRnd == 1, !is.na(Dice_Sum)) %>%
+  summarise(observed_3_11 = sum(Dice_Sum %in% c(3, 11))) %>%
+  pull(observed_3_11)
+
+print(fisher.test(
+  matrix(
+    c(observed_3_11, 40, 360 - observed_3_11, 320),
+    nrow = 2,
+    byrow = TRUE
+  ),
+  alternative = "greater"
+))
+
+# 7 reported
+observed_7 <- df %>%
+  filter(Lie_TaskRnd == 1, !is.na(Dice_Sum)) %>%
+  summarise(observed_7 = sum(Dice_Sum %in% 7)) %>%
+  pull(observed_7)
+
+print(fisher.test(
+  matrix(c(observed_7, 60, 360 - observed_7, 300), nrow = 2, byrow = TRUE),
+  alternative = "less"
+))
+
+# 6 or 8 reported
+observed_6_8 <- df %>%
+  filter(Lie_TaskRnd == 1, !is.na(Dice_Sum)) %>%
+  summarise(observed_6_8 = sum(Dice_Sum %in% c(6, 8))) %>%
+  pull(observed_6_8)
+
+print(fisher.test(
+  matrix(c(observed_6_8, 100, 360 - observed_6_8, 260), nrow = 2, byrow = TRUE),
+  alternative = "less"
+))
+```
+
+### Hypothesis Testing
+
+#### Graph
+
+
+```{r}
+#| fig-width: 12
+#| fig-height: 5
+#| out-width: "100%"
+# Moral Cleansing Graph
+task2_avg <- df %>%
+  mutate(
+    task1_hyp_group = case_when(
+      task1_earnings %in% c(2.5, 3.0) ~ "2.5/3.0",
+      task1_earnings %in% c(0.5, 1.0) ~ "0.5/1.0",
+      TRUE ~ as.character(task1_earnings)
+    )
+  ) %>%
+  group_by(treatment, task1_hyp_group, treatment_label) %>%
+  summarise(
+    task2_earnings_avg_hypgroups = mean(task2_earnings, na.rm = TRUE),
+    se = sd(task2_earnings, na.rm = TRUE) / sqrt(sum(!is.na(task2_earnings))),
+    ci_lower = task2_earnings_avg_hypgroups - 1.96 * se,
+    ci_upper = task2_earnings_avg_hypgroups + 1.96 * se,
+    .groups = "drop"
+  )
+
+MoralCleansing_Graph <- task2_avg %>%
+  filter(
+    treatment %in%
+      c(
+        "Bsl_Giving",
+        "Lie_Giving",
+        "Bsl_Taking",
+        "Lie_Taking"
+      ),
+    task1_hyp_group == "2.5/3.0"
+  ) %>%
+  mutate(
+    treatment_label = factor(
+      as.character(treatment_label),
+      levels = c("Base–Take", "Lie–Take", "Base–Give", "Lie–Give")
+    ),
+    frame_group = factor(
+      case_when(
+        treatment_label %in% c("Base–Give", "Lie–Give") ~ "Giving Frame",
+        treatment_label %in% c("Base–Take", "Lie–Take") ~ "Taking Frame"
+      ),
+      levels = c("Giving Frame", "Taking Frame")
+    )
+  ) %>%
+  ggplot(aes(
+    x = treatment_label,
+    y = task2_earnings_avg_hypgroups,
+    fill = treatment_label
+  )) +
+  geom_col(position = position_dodge(width = 0.9)) +
+  geom_errorbar(
+    aes(ymin = ci_lower, ymax = ci_upper),
+    position = position_dodge(width = 0.9),
+    width = 0.2,
+    color = "black",
+    linewidth = 0.5
+  ) +
+  facet_wrap(
+    ~frame_group,
+    scales = "free_x",
+    strip.position = "bottom"
+  ) +
+  scale_fill_manual(
+    values = c(
+      "Base–Take" = "#1f4e79",
+      "Lie–Take" = "#76a1c9",
+      "Base–Give" = "#1f4e79",
+      "Lie–Give" = "#76a1c9"
+    )
+  ) +
+  scale_y_continuous(
+    limits = c(0, 2.5),
+    breaks = seq(0, 2.5, 0.5),
+    expand = c(0, 0)
+  ) +
+  labs(
+    x = NULL,
+    y = "Average Task 2 Earnings",
+    title = "Moral Cleansing: Task 1 Earnings = 2.5/3",
+    fill = NULL
+  ) +
+  base_theme +
+  theme(
+    strip.placement = "outside",
+    strip.background = element_blank(),
+    strip.text = element_text(size = 12),
+    panel.spacing = unit(0.1, "cm"),
+    legend.position = "none"
+  )
+
+# Moral Licensing Graph
+task2_avg <- df %>%
+  mutate(
+    task1_hyp_group = case_when(
+      task1_earnings %in% c(2.5, 3.0) ~ "2.5/3.0",
+      task1_earnings %in% c(0.5, 1.0) ~ "0.5/1.0",
+      TRUE ~ as.character(task1_earnings)
+    )
+  ) %>%
+  group_by(treatment, task1_hyp_group, treatment_label) %>%
+  summarise(
+    task2_earnings_avg_hypgroups = mean(task2_earnings, na.rm = TRUE),
+    se = sd(task2_earnings, na.rm = TRUE) / sqrt(sum(!is.na(task2_earnings))),
+    ci_lower = task2_earnings_avg_hypgroups - 1.96 * se,
+    ci_upper = task2_earnings_avg_hypgroups + 1.96 * se,
+    .groups = "drop"
+  )
+
+MoralLicensing_Graph <- task2_avg %>%
+  filter(
+    treatment %in%
+      c(
+        "Bsl_Giving",
+        "Lie_Giving",
+        "Bsl_Taking",
+        "Lie_Taking"
+      ),
+    task1_hyp_group == "0.5/1.0"
+  ) %>%
+  mutate(
+    treatment_label = factor(
+      as.character(treatment_label),
+      levels = c("Base–Take", "Lie–Take", "Base–Give", "Lie–Give")
+    ),
+    frame_group = factor(
+      case_when(
+        treatment_label %in% c("Base–Give", "Lie–Give") ~ "Giving Frame",
+        treatment_label %in% c("Base–Take", "Lie–Take") ~ "Taking Frame"
+      ),
+      levels = c("Giving Frame", "Taking Frame")
+    )
+  ) %>%
+  ggplot(aes(
+    x = treatment_label,
+    y = task2_earnings_avg_hypgroups,
+    fill = treatment_label
+  )) +
+  geom_col(position = position_dodge(width = 0.9)) +
+  geom_errorbar(
+    aes(ymin = ci_lower, ymax = ci_upper),
+    position = position_dodge(width = 0.9),
+    width = 0.2,
+    color = "black",
+    linewidth = 0.5
+  ) +
+  facet_wrap(
+    ~frame_group,
+    scales = "free_x",
+    strip.position = "bottom"
+  ) +
+  scale_fill_manual(
+    values = c(
+      "Base–Take" = "#1f4e79",
+      "Lie–Take" = "#76a1c9",
+      "Base–Give" = "#1f4e79",
+      "Lie–Give" = "#76a1c9"
+    )
+  ) +
+  scale_y_continuous(
+    limits = c(0, 2.5),
+    breaks = seq(0, 2.5, 0.5),
+    expand = c(0, 0)
+  ) +
+  labs(
+    x = NULL,
+    y = "Average Task 2 Earnings",
+    title = "Moral Licensing: Task 1 Earnings = 0.5/1",
+    fill = NULL
+  ) +
+  base_theme +
+  theme(
+    strip.placement = "outside",
+    strip.background = element_blank(),
+    strip.text = element_text(size = 12),
+    panel.spacing = unit(0.1, "cm"),
+    legend.position = "none"
+  )
+
+MoralBalancing_Graph <- MoralCleansing_Graph + MoralLicensing_Graph
+
+MoralBalancing_Graph
+
+ggsave(
+  file.path(writing_dir, "Figures", "MoralBalancing_Graph.pdf"),
+  MoralBalancing_Graph,
+  width = 12,
+  height = 5
+)
+```
+
+#### Non-Parametric
+
+```{r}
+# Moral Licensing: Lie vs Base, low task1 earnings
+
+## Taking
+print(wilcox.test(
+  task2_earnings ~ treatment,
+  data = df %>%
+    filter(
+      task1_earnings %in% c(0.5, 1),
+      treatment %in% c("Bsl_Taking", "Lie_Taking")
+    ),
+  exact = FALSE,
+  correct = FALSE
+))
+
+## Giving
+print(wilcox.test(
+  task2_earnings ~ treatment,
+  data = df %>%
+    filter(
+      task1_earnings %in% c(0.5, 1),
+      treatment %in% c("Bsl_Giving", "Lie_Giving")
+    ),
+  exact = FALSE,
+  correct = FALSE
+))
+
+# Moral Cleansing: Lie vs Base, high task1 earnings
+
+## Taking
+print(wilcox.test(
+  task2_earnings ~ treatment,
+  data = df %>%
+    filter(
+      task1_earnings %in% c(2.5, 3),
+      treatment %in% c("Bsl_Taking", "Lie_Taking")
+    ),
+  exact = FALSE,
+  correct = FALSE
+))
+
+## Giving
+print(wilcox.test(
+  task2_earnings ~ treatment,
+  data = df %>%
+    filter(
+      task1_earnings %in% c(2.5, 3),
+      treatment %in% c("Bsl_Giving", "Lie_Giving")
+    ),
+  exact = FALSE,
+  correct = FALSE
+))
+```
+
+#### Parametric
+
+OLS Moral Licensing 
+
+```{r}
+# Filter for Moral Licensing Data
+moral_license_data <- df %>%
+  filter(
+    LUCK_treatment == 0,
+    task1_earnings %in% c(0.5, 1),
+    TreatmentSet == 1
+  )
+
+m1 <- lm(
+  task2_earnings ~ LIE_treatment + Giving_frame,
+  data = moral_license_data
+)
+
+m2 <- lm(
+  task2_earnings ~ LIE_treatment * Giving_frame,
+  data = moral_license_data
+)
+
+m3 <- lm(
+  task2_earnings ~ LIE_treatment * Giving_frame + SocialApp_T2Choice,
+  data = moral_license_data
+)
+
+m4 <- lm(
+  task2_earnings ~ LIE_treatment *
+    Giving_frame +
+    SocialApp00_T2Environ +
+    SocialApp05_T2Environ +
+    SocialApp10_T2Environ +
+    SocialApp15_T2Environ +
+    SocialApp20_T2Environ +
+    SocialApp25_T2Environ +
+    SocialApp30_T2Environ,
+  data = moral_license_data
+)
+
+models <- list(
+  "Main Effects" = m1,
+  "Interaction" = m2 #,
+  #"(3)" = m3,
+  #"(4)" = m4
+)
+
+coef_map <- c(
+  "LIE_treatment" = "Lie treatment",
+  "Giving_frame" = "Giving frame",
+  "LIE_treatment:Giving_frame" = "Lie treatment $\\times$ Giving frame",
+  "(Intercept)" = "Constant"
+)
+
+#add_rows <- tibble(
+#  term = c(
+#    "Social App. T2 Choice",
+#    "Social App. T2 Frame"
+#  ),
+#  "(1)" = c("", ""),
+#  "(2)" = c("", ""),
+#  "(3)" = c("$\\checkmark$", ""),
+#  "(4)" = c("", "$\\checkmark$")
+#)
+
+gof_map <- tibble(
+  raw = "nobs",
+  clean = "N",
+  fmt = 0
+)
+
+stars_custom <- c(
+  "*" = 0.10,
+  "**" = 0.05,
+  "***" = 0.01
+)
+
+Regress_MoralLicensing <- modelsummary(
+  models,
+  coef_map = coef_map,
+  #add_rows = add_rows,
+  gof_map = gof_map,
+  stars = stars_custom,
+  estimate = "{estimate}{stars}",
+  statistic = "({std.error})",
+  escape = FALSE,
+  output = "tinytable"
+)
+
+Regress_MoralLicensing <- group_tt(
+  Regress_MoralLicensing,
+  j = list("Task 2 Earnings" = 2:3) # if T1 Earnings = 0.5/1
+)
+
+save_tinytable_body(
+  Regress_MoralLicensing,
+  file.path(writing_dir, "Tables", "Regress_MoralLicensing.tex")
+)
+
+Regress_MoralLicensing
+```
+
+OLS Moral Cleansing
+
+```{r}
+# Filter for Moral Licensing Data
+moral_cleanse_data <- df %>%
+  filter(
+    LUCK_treatment == 0,
+    task1_earnings %in% c(2.5, 3),
+    TreatmentSet == 1
+  )
+
+m1 <- lm(
+  task2_earnings ~ LIE_treatment + Giving_frame,
+  data = moral_cleanse_data
+)
+
+m2 <- lm(
+  task2_earnings ~ LIE_treatment * Giving_frame,
+  data = moral_cleanse_data
+)
+
+m3 <- lm(
+  task2_earnings ~ LIE_treatment * Giving_frame + SocialApp_T2Choice,
+  data = moral_cleanse_data
+)
+
+m4 <- lm(
+  task2_earnings ~ LIE_treatment *
+    Giving_frame +
+    SocialApp00_T2Environ +
+    SocialApp05_T2Environ +
+    SocialApp10_T2Environ +
+    SocialApp15_T2Environ +
+    SocialApp20_T2Environ +
+    SocialApp25_T2Environ +
+    SocialApp30_T2Environ,
+  data = moral_cleanse_data
+)
+
+models <- list(
+  "Main Effects" = m1,
+  "Interaction" = m2 #,
+  #"(3)" = m3,
+  #"(4)" = m4
+)
+
+coef_map <- c(
+  "LIE_treatment" = "Lie Treatment",
+  "Giving_frame" = "Giving Frame",
+  "LIE_treatment:Giving_frame" = "Lie Treatment $\\times$ Giving Frame",
+  "(Intercept)" = "Constant"
+)
+
+#add_rows <- tibble(
+#  term = c(
+#    "Social App. T2 Choice",
+#    "Social App. T2 Frame"
+#  ),
+#  "(1)" = c("", ""),
+#  "(2)" = c("", ""),
+#  "(3)" = c("$\\checkmark$", ""),
+#  "(4)" = c("", "$\\checkmark$")
+#)
+
+gof_map <- tibble(
+  raw = "nobs",
+  clean = "N",
+  fmt = 0
+)
+
+stars_custom <- c(
+  "*" = 0.10,
+  "**" = 0.05,
+  "***" = 0.01
+)
+
+Regress_MoralCleansing <- modelsummary(
+  models,
+  coef_map = coef_map,
+  #add_rows = add_rows,
+  gof_map = gof_map,
+  stars = stars_custom,
+  estimate = "{estimate}{stars}",
+  statistic = "({std.error})",
+  escape = FALSE,
+  output = "tinytable"
+)
+
+Regress_MoralCleansing <- group_tt(
+  Regress_MoralCleansing,
+  j = list("Task 2 Earnings" = 2:3) # if T1 Earnings = 2.5/3
+)
+
+save_tinytable_body(
+  Regress_MoralCleansing,
+  file.path(writing_dir, "Tables", "Regress_MoralCleansing.tex")
+)
+
+Regress_MoralCleansing
+```
+
+## Luck Balancing
+
+### Hypothesis Testing
+
+#### Graph
+
+```{r}
+#| fig-width: 12
+#| fig-height: 5
+#| out-width: "100%"
+# Luck Cleansing Graph
+task2_avg <- df %>%
+  mutate(
+    task1_hyp_group = case_when(
+      task1_earnings %in% c(2.5, 3.0) ~ "2.5/3.0",
+      task1_earnings %in% c(0.5, 1.0) ~ "0.5/1.0",
+      TRUE ~ as.character(task1_earnings)
+    )
+  ) %>%
+  group_by(treatment, task1_hyp_group, treatment_label) %>%
+  summarise(
+    task2_earnings_avg_hypgroups = mean(task2_earnings, na.rm = TRUE),
+    se = sd(task2_earnings, na.rm = TRUE) / sqrt(sum(!is.na(task2_earnings))),
+    ci_lower = task2_earnings_avg_hypgroups - 1.96 * se,
+    ci_upper = task2_earnings_avg_hypgroups + 1.96 * se,
+    .groups = "drop"
+  )
+
+LuckCleansing_Graph <- task2_avg %>%
+  filter(
+    treatment %in%
+      c(
+        "Bsl_Giving",
+        "Luck_Giving",
+        "Bsl_Taking",
+        "Luck_Taking"
+      ),
+    task1_hyp_group == "2.5/3.0"
+  ) %>%
+  mutate(
+    treatment_label = factor(
+      as.character(treatment_label),
+      levels = c("Base–Give", "Luck-Give", "Base–Take", "Luck-Take")
+    ),
+    frame_group = factor(
+      case_when(
+        treatment_label %in% c("Base–Give", "Luck-Give") ~ "Giving Frame",
+        treatment_label %in% c("Base–Take", "Luck-Take") ~ "Taking Frame"
+      ),
+      levels = c("Giving Frame", "Taking Frame")
+    )
+  ) %>%
+  ggplot(aes(
+    x = treatment_label,
+    y = task2_earnings_avg_hypgroups,
+    fill = treatment_label
+  )) +
+  geom_col(position = position_dodge(width = 0.9)) +
+  geom_errorbar(
+    aes(ymin = ci_lower, ymax = ci_upper),
+    position = position_dodge(width = 0.9),
+    width = 0.2,
+    color = "black",
+    linewidth = 0.5
+  ) +
+  facet_wrap(
+    ~frame_group,
+    scales = "free_x",
+    strip.position = "bottom"
+  ) +
+  scale_fill_manual(
+    values = c(
+      "Base–Give" = "#1f4e79",
+      "Luck-Give" = "#76a1c9",
+      "Base–Take" = "#1f4e79",
+      "Luck-Take" = "#76a1c9"
+    )
+  ) +
+  scale_y_continuous(
+    limits = c(0, 2.5),
+    breaks = seq(0, 2.5, 0.5),
+    expand = c(0, 0)
+  ) +
+  labs(
+    x = NULL,
+    y = "Average Task 2 Earnings",
+    title = "Luck Cleansing: Task 1 Earnings = 2.5/3",
+    fill = NULL
+  ) +
+  base_theme +
+  theme(
+    strip.placement = "outside",
+    strip.background = element_blank(),
+    strip.text = element_text(size = 12),
+    panel.spacing = unit(0.1, "cm"),
+    legend.position = "none"
+  )
+
+# Luck Licensing Graph
+task2_avg <- df %>%
+  mutate(
+    task1_hyp_group = case_when(
+      task1_earnings %in% c(2.5, 3.0) ~ "2.5/3.0",
+      task1_earnings %in% c(0.5, 1.0) ~ "0.5/1.0",
+      TRUE ~ as.character(task1_earnings)
+    )
+  ) %>%
+  group_by(treatment, task1_hyp_group, treatment_label) %>%
+  summarise(
+    task2_earnings_avg_hypgroups = mean(task2_earnings, na.rm = TRUE),
+    se = sd(task2_earnings, na.rm = TRUE) / sqrt(sum(!is.na(task2_earnings))),
+    ci_lower = task2_earnings_avg_hypgroups - 1.96 * se,
+    ci_upper = task2_earnings_avg_hypgroups + 1.96 * se,
+    .groups = "drop"
+  )
+
+LuckLicensing_Graph <- task2_avg %>%
+  filter(
+    treatment %in%
+      c(
+        "Bsl_Giving",
+        "Luck_Giving",
+        "Bsl_Taking",
+        "Luck_Taking"
+      ),
+    task1_hyp_group == "0.5/1.0"
+  ) %>%
+  mutate(
+    treatment_label = factor(
+      as.character(treatment_label),
+      levels = c("Base–Give", "Luck-Give", "Base–Take", "Luck-Take")
+    ),
+    frame_group = factor(
+      case_when(
+        treatment_label %in% c("Base–Give", "Luck-Give") ~ "Giving Frame",
+        treatment_label %in% c("Base–Take", "Luck-Take") ~ "Taking Frame"
+      ),
+      levels = c("Giving Frame", "Taking Frame")
+    )
+  ) %>%
+  ggplot(aes(
+    x = treatment_label,
+    y = task2_earnings_avg_hypgroups,
+    fill = treatment_label
+  )) +
+  geom_col(position = position_dodge(width = 0.9)) +
+  geom_errorbar(
+    aes(ymin = ci_lower, ymax = ci_upper),
+    position = position_dodge(width = 0.9),
+    width = 0.2,
+    color = "black",
+    linewidth = 0.5
+  ) +
+  facet_wrap(
+    ~frame_group,
+    scales = "free_x",
+    strip.position = "bottom"
+  ) +
+  scale_fill_manual(
+    values = c(
+      "Base–Give" = "#1f4e79",
+      "Luck-Give" = "#76a1c9",
+      "Base–Take" = "#1f4e79",
+      "Luck-Take" = "#76a1c9"
+    )
+  ) +
+  scale_y_continuous(
+    limits = c(0, 2.5),
+    breaks = seq(0, 2.5, 0.5),
+    expand = c(0, 0)
+  ) +
+  labs(
+    x = NULL,
+    y = "Average Task 2 Earnings",
+    title = "Luck Licensing: Task 1 Earnings = 0.5/1",
+    fill = NULL
+  ) +
+  base_theme +
+  theme(
+    strip.placement = "outside",
+    strip.background = element_blank(),
+    strip.text = element_text(size = 12),
+    panel.spacing = unit(0.1, "cm"),
+    legend.position = "none"
+  )
+
+LuckBalancing_Graph <- LuckCleansing_Graph + LuckLicensing_Graph
+
+LuckBalancing_Graph
+
+ggsave(
+  file.path(writing_dir, "Figures", "LuckBalancing_Graph.pdf"),
+  LuckBalancing_Graph,
+  width = 12,
+  height = 5
+)
+```
+
+
+#### Non-Parametric
+
+```{r}
+# Luck Licensing: Luck vs Base, low task1 earnings
+
+## Taking
+wilcox.test(
+  task2_earnings ~ treatment,
+  data = df %>%
+    filter(
+      task1_earnings %in% c(0.5, 1),
+      treatment %in% c("Bsl_Taking", "Luck_Taking")
+    ),
+  exact = FALSE,
+  correct = FALSE
+)
+
+## Giving
+wilcox.test(
+  task2_earnings ~ treatment,
+  data = df %>%
+    filter(
+      task1_earnings %in% c(0.5, 1),
+      treatment %in% c("Bsl_Giving", "Luck_Giving")
+    ),
+  exact = FALSE,
+  correct = FALSE
+)
+
+# Luck Cleansing: Luck vs Base, high task1 earnings
+
+## Taking
+wilcox.test(
+  task2_earnings ~ treatment,
+  data = df %>%
+    filter(
+      task1_earnings %in% c(2.5, 3),
+      treatment %in% c("Bsl_Taking", "Luck_Taking")
+    ),
+  exact = FALSE,
+  correct = FALSE
+)
+
+## Giving
+wilcox.test(
+  task2_earnings ~ treatment,
+  data = df %>%
+    filter(
+      task1_earnings %in% c(2.5, 3),
+      treatment %in% c("Bsl_Giving", "Luck_Giving")
+    ),
+  exact = FALSE,
+  correct = FALSE
+)
+```
+
+#### Parametric
+
+OLS Luck Licensing 
+
+```{r}
+# Filter for Moral Licensing Data
+luck_license_data <- df %>%
+  filter(
+    LIE_treatment == 0,
+    task1_earnings %in% c(0.5, 1),
+    TreatmentSet == 1
+  )
+
+m1 <- lm(
+  task2_earnings ~ LUCK_treatment + Giving_frame,
+  data = luck_license_data
+)
+
+m2 <- lm(
+  task2_earnings ~ LUCK_treatment * Giving_frame,
+  data = luck_license_data
+)
+
+m3 <- lm(
+  task2_earnings ~ LUCK_treatment * Giving_frame + SocialApp_T2Choice,
+  data = luck_license_data
+)
+
+m4 <- lm(
+  task2_earnings ~ LUCK_treatment *
+    Giving_frame +
+    SocialApp00_T2Environ +
+    SocialApp05_T2Environ +
+    SocialApp10_T2Environ +
+    SocialApp15_T2Environ +
+    SocialApp20_T2Environ +
+    SocialApp25_T2Environ +
+    SocialApp30_T2Environ,
+  data = luck_license_data
+)
+
+models <- list(
+  "Main Effects" = m1,
+  "Interaction" = m2 #,
+  #"(3)" = m3,
+  #"(4)" = m4
+)
+
+coef_map <- c(
+  "LUCK_treatment" = "Luck Treatment",
+  "Giving_frame" = "Giving Frame",
+  "LUCK_treatment:Giving_frame" = "Luck $\\times$ Giving",
+  "(Intercept)" = "Constant"
+)
+
+#add_rows <- tibble(
+#  term = c(
+#    "Social App. T2 Choice",
+#    "Social App. T2 Frame"
+#  ),
+#  "(1)" = c("", ""),
+#  "(2)" = c("", ""),
+#  "(3)" = c("$\\checkmark$", ""),
+#  "(4)" = c("", "$\\checkmark$")
+#)
+
+gof_map <- tibble(
+  raw = "nobs",
+  clean = "N",
+  fmt = 0
+)
+
+stars_custom <- c(
+  "*" = 0.10,
+  "**" = 0.05,
+  "***" = 0.01
+)
+
+Regress_LuckLicensing <- modelsummary(
+  models,
+  coef_map = coef_map,
+  #add_rows = add_rows,
+  gof_map = gof_map,
+  stars = stars_custom,
+  estimate = "{estimate}{stars}",
+  statistic = "({std.error})",
+  escape = FALSE,
+  output = "tinytable"
+)
+
+Regress_LuckLicensing <- group_tt(
+  Regress_LuckLicensing,
+  j = list("Task 2 Earnings" = 2:3) # if T1 Earnings = 0.5/1
+)
+
+save_tinytable_body(
+  Regress_LuckLicensing,
+  file.path(writing_dir, "Tables", "Regress_LuckLicensing.tex")
+)
+
+Regress_LuckLicensing
+```
+
+OLS Luck Cleansing
+
+```{r}
+luck_cleanse_data <- df %>%
+  filter(
+    LIE_treatment == 0,
+    task1_earnings %in% c(2.5, 3),
+    TreatmentSet == 1
+  )
+
+m1 <- lm(
+  task2_earnings ~ LUCK_treatment + Giving_frame,
+  data = luck_cleanse_data
+)
+
+m2 <- lm(
+  task2_earnings ~ LUCK_treatment * Giving_frame,
+  data = luck_cleanse_data
+)
+
+m3 <- lm(
+  task2_earnings ~ LUCK_treatment * Giving_frame + SocialApp_T2Choice,
+  data = luck_cleanse_data
+)
+
+m4 <- lm(
+  task2_earnings ~ LUCK_treatment *
+    Giving_frame +
+    SocialApp00_T2Environ +
+    SocialApp05_T2Environ +
+    SocialApp10_T2Environ +
+    SocialApp15_T2Environ +
+    SocialApp20_T2Environ +
+    SocialApp25_T2Environ +
+    SocialApp30_T2Environ,
+  data = luck_cleanse_data
+)
+
+models <- list(
+  "Main Effects" = m1,
+  "Interaction" = m2 #,
+  #"(3)" = m3,
+  #"(4)" = m4
+)
+
+coef_map <- c(
+  "LUCK_treatment" = "Luck Treatment",
+  "Giving_frame" = "Giving Frame",
+  "LUCK_treatment:Giving_frame" = "Luck $\\times$ Giving",
+  "(Intercept)" = "Constant"
+)
+
+#add_rows <- tibble(
+#  term = c(
+#    "Social App. T2 Choice",
+#    "Social App. T2 Frame"
+#  ),
+#  "(1)" = c("", ""),
+#  "(2)" = c("", ""),
+#  "(3)" = c("$\\checkmark$", ""),
+#  "(4)" = c("", "$\\checkmark$")
+#)
+
+gof_map <- tibble(
+  raw = "nobs",
+  clean = "N",
+  fmt = 0
+)
+
+stars_custom <- c(
+  "\\small \\textsuperscript{*}" = 0.10,
+  "\\small \\textsuperscript{**}" = 0.05,
+  "\\small \\textsuperscript{***}" = 0.01
+)
+
+Regress_LuckCleansing <- modelsummary(
+  models,
+  coef_map = coef_map,
+  #add_rows = add_rows,
+  gof_map = gof_map,
+  stars = stars_custom,
+  estimate = "{estimate}{stars}",
+  statistic = "({std.error})",
+  escape = FALSE,
+  output = "tinytable"
+)
+
+Regress_LuckCleansing <- group_tt(
+  Regress_LuckCleansing,
+  j = list("Task 2 Earnings" = 2:3) # if T1 Earnings = 2.5/3
+)
+
+save_tinytable_body(
+  Regress_LuckCleansing,
+  file.path(writing_dir, "Tables", "Regress_LuckCleansing.tex")
+)
+
+Regress_LuckCleansing
+```
+
+## Robustness Tests
+
+### Exploring Personality 
+
+#### General results
+
+```{r}
+main_data <- df %>%
+  filter(TreatmentSet == 1)
+
+m1 <- lm(
+  task2_earnings ~ task1_earnings +
+    Giving_frame +
+    LIE_treatment +
+    LUCK_treatment +
+    Female +
+    Narciss +
+    Psychop +
+    Machiavel,
+  data = main_data
+)
+
+m2 <- lm(
+  task2_earnings ~ task1_earnings +
+    Giving_frame +
+    LIE_treatment +
+    LUCK_treatment +
+    SocialApp_T2Choice +
+    Female +
+    Narciss +
+    Psychop +
+    Machiavel,
+  data = main_data
+)
+
+m3 <- lm(
+  task2_earnings ~ task1_earnings +
+    Giving_frame +
+    LIE_treatment +
+    LUCK_treatment +
+    SocialApp00_T2Environ +
+    SocialApp05_T2Environ +
+    SocialApp10_T2Environ +
+    SocialApp15_T2Environ +
+    SocialApp20_T2Environ +
+    SocialApp25_T2Environ +
+    SocialApp30_T2Environ +
+    Female +
+    Narciss +
+    Psychop +
+    Machiavel,
+  data = main_data
+)
+
+m4 <- lm(
+  task2_earnings ~ task1_earnings +
+    Giving_frame +
+    LIE_treatment +
+    LUCK_treatment +
+    Female +
+    Extraversion +
+    Agreeableness +
+    Conscientiousness +
+    Neuroticism +
+    Openness,
+  data = main_data
+)
+
+m5 <- lm(
+  task2_earnings ~ task1_earnings +
+    Giving_frame +
+    LIE_treatment +
+    LUCK_treatment +
+    SocialApp_T2Choice +
+    Female +
+    Extraversion +
+    Agreeableness +
+    Conscientiousness +
+    Neuroticism +
+    Openness,
+  data = main_data
+)
+
+m6 <- lm(
+  task2_earnings ~ task1_earnings +
+    Giving_frame +
+    LIE_treatment +
+    LUCK_treatment +
+    SocialApp00_T2Environ +
+    SocialApp05_T2Environ +
+    SocialApp10_T2Environ +
+    SocialApp15_T2Environ +
+    SocialApp20_T2Environ +
+    SocialApp25_T2Environ +
+    SocialApp30_T2Environ +
+    Female +
+    Extraversion +
+    Agreeableness +
+    Conscientiousness +
+    Neuroticism +
+    Openness,
+  data = main_data
+)
+
+models <- list(
+  "(1)" = m1,
+  "(2)" = m2,
+  "(3)" = m3,
+  "(4)" = m4,
+  "(5)" = m5,
+  "(6)" = m6
+)
+
+coef_map <- c(
+  "task1_earnings" = "Task 1 Earnings",
+  "Giving_frame" = "Giving Frame",
+  "LIE_treatment" = "Lie Treatment",
+  "LUCK_treatment" = "Luck Treatment",
+  "Female" = "Female",
+  "Narciss" = "Narcissism",
+  "Psychop" = "Psychopathy",
+  "Machiavel" = "Machiavel.",
+  "Extraversion" = "Extraversion",
+  "Agreeableness" = "Agreeableness",
+  "Conscientiousness" = "Conscientiousness",
+  "Neuroticism" = "Neuroticism",
+  "Openness" = "Openness",
+  "(Intercept)" = "Constant"
+)
+
+add_rows <- tibble(
+  term = c(
+    "Social App. T2 Choice",
+    "Social App. T2 Frame"
+  ),
+  "(1)" = c("", ""),
+  "(2)" = c("$\\checkmark$", ""),
+  "(3)" = c("", "$\\checkmark$"),
+  "(4)" = c("", ""),
+  "(5)" = c("$\\checkmark$", ""),
+  "(6)" = c("", "$\\checkmark$")
+)
+
+gof_map <- tibble(
+  raw = "nobs",
+  clean = "N",
+  fmt = 0
+)
+
+stars_custom <- c(
+  "\\small \\textsuperscript{*}" = 0.10,
+  "\\small \\textsuperscript{**}" = 0.05,
+  "\\small \\textsuperscript{***}" = 0.01
+)
+
+Regress_PersonalityGeneral <- modelsummary(
+  models,
+  coef_map = coef_map,
+  add_rows = add_rows,
+  gof_map = gof_map,
+  stars = stars_custom,
+  estimate = "{estimate}{stars}",
+  statistic = "({std.error})",
+  escape = FALSE,
+  output = "tinytable"
+)
+
+Regress_PersonalityGeneral <- group_tt(
+  Regress_PersonalityGeneral,
+  j = list("Task 2 Earnings" = 2:7)
+)
+
+save_tinytable_body(
+  Regress_PersonalityGeneral,
+  file.path(writing_dir, "Tables", "Regress_PersonalityGeneral.tex")
+)
+
+Regress_PersonalityGeneral
+```
+
+#### Moral Cleansing and Personality
+
+```{r}
+# Big 5
+moral_cleanse_data <- df %>%
+  filter(
+    LUCK_treatment == 0,
+    task1_earnings %in% c(2.5, 3),
+    TreatmentSet == 1
+  )
+
+m1 <- lm(
+  task2_earnings ~ LIE_treatment * Giving_frame + Female * LIE_treatment,
+  data = moral_cleanse_data
+)
+
+m2 <- lm(
+  task2_earnings ~ LIE_treatment *
+    Giving_frame +
+    Female * LIE_treatment +
+    Extraversion +
+    Agreeableness +
+    Conscientiousness +
+    Neuroticism +
+    Openness,
+  data = moral_cleanse_data
+)
+
+m3 <- lm(
+  task2_earnings ~ LIE_treatment *
+    Giving_frame +
+    Female * LIE_treatment +
+    Extraversion * LIE_treatment +
+    Agreeableness * LIE_treatment +
+    Conscientiousness * LIE_treatment +
+    Neuroticism * LIE_treatment +
+    Openness * LIE_treatment,
+  data = moral_cleanse_data
+)
+
+models <- list(
+  "(1)" = m1,
+  "(2)" = m2,
+  "(3)" = m3
+)
+
+coef_map <- c(
+  "LIE_treatment" = "Lie treatment",
+  "Giving_frame" = "Giving Frame",
+  "LIE_treatment:Giving_frame" = "Lie Treatment $\\times$ Giving Frame",
+  "Female" = "Female",
+  "LIE_treatment:Female" = "Female $\\times$ Lie Treatment",
+  "Extraversion" = "Extraversion",
+  "LIE_treatment:Extraversion" = "Extraversion $\\times$ Lie Treatment",
+  "Agreeableness" = "Agreeableness",
+  "LIE_treatment:Agreeableness" = "Agreeableness $\\times$ Lie Treatment",
+  "Conscientiousness" = "Conscientiousness",
+  "LIE_treatment:Conscientiousness" = "Conscientiousness $\\times$ Lie Treatment",
+  "Neuroticism" = "Neuroticism",
+  "LIE_treatment:Neuroticism" = "Neuroticism $\\times$ Lie Treatment",
+  "Openness" = "Openness",
+  "LIE_treatment:Openness" = "Openness $\\times$ Lie Treatment",
+  "(Intercept)" = "Constant"
+)
+
+gof_map <- tibble(
+  raw = "nobs",
+  clean = "N",
+  fmt = 0
+)
+
+stars_custom <- c(
+  "*" = 0.10,
+  "**" = 0.05,
+  "***" = 0.01
+)
+
+Regress_MoralCleansingBig5 <- modelsummary(
+  models,
+  coef_map = coef_map,
+  gof_map = gof_map,
+  stars = stars_custom,
+  estimate = "{estimate}{stars}",
+  statistic = "({std.error})",
+  escape = FALSE,
+  output = "tinytable"
+)
+
+Regress_MoralCleansingBig5 <- group_tt(
+  Regress_MoralCleansingBig5,
+  j = list("T2 Earnings if T1 Earnings = 2.5/3" = 2:4)
+)
+
+save_tinytable_body(
+  Regress_MoralCleansingBig5,
+  file.path(writing_dir, "Tables", "Regress_MoralCleansingBig5.tex")
+)
+
+Regress_MoralCleansingBig5
+
+# Dark Triad
+moral_license_data <- df %>%
+  filter(
+    LUCK_treatment == 0,
+    task1_earnings %in% c(2.5, 3),
+    TreatmentSet == 1
+  )
+
+m1 <- lm(
+  task2_earnings ~ LIE_treatment * Giving_frame + Female * LIE_treatment,
+  data = moral_cleanse_data
+)
+
+m2 <- lm(
+  task2_earnings ~ LIE_treatment *
+    Giving_frame +
+    Female * LIE_treatment +
+    Narciss +
+    Psychop +
+    Machiavel,
+  data = moral_cleanse_data
+)
+
+m3 <- lm(
+  task2_earnings ~ LIE_treatment *
+    Giving_frame +
+    Female * LIE_treatment +
+    Narciss * LIE_treatment +
+    Psychop * LIE_treatment +
+    Machiavel * LIE_treatment,
+  data = moral_cleanse_data
+)
+
+models <- list(
+  "(1)" = m1,
+  "(2)" = m2,
+  "(3)" = m3
+)
+
+coef_map <- c(
+  "LIE_treatment" = "Lie treatment",
+  "Giving_frame" = "Giving Frame",
+  "LIE_treatment:Giving_frame" = "Lie Treatment $\\times$ Giving Frame",
+  "Female" = "Female",
+  "LIE_treatment:Female" = "Female $\\times$ Lie Treatment",
+  "Narciss" = "Narcissism",
+  "LIE_treatment:Narciss" = "Narcissism $\\times$ Lie Treatment",
+  "Psychop" = "Psychopathy",
+  "LIE_treatment:Psychop" = "Psychopathy $\\times$ Lie Treatment",
+  "Machiavel" = "Machiavel.",
+  "LIE_treatment:Machiavel" = "Machiavel. $\\times$ Lie Treatment",
+  "(Intercept)" = "Constant"
+)
+
+gof_map <- tibble(
+  raw = "nobs",
+  clean = "N",
+  fmt = 0
+)
+
+stars_custom <- c(
+  "*" = 0.10,
+  "**" = 0.05,
+  "***" = 0.01
+)
+
+Regress_MoralCleansingDarkTriad <- modelsummary(
+  models,
+  coef_map = coef_map,
+  gof_map = gof_map,
+  stars = stars_custom,
+  estimate = "{estimate}{stars}",
+  statistic = "({std.error})",
+  escape = FALSE,
+  output = "tinytable"
+)
+
+Regress_MoralCleansingDarkTriad <- group_tt(
+  Regress_MoralCleansingDarkTriad,
+  j = list("T2 Earnings if T1 Earnings = 2.5/3" = 2:4)
+)
+
+save_tinytable_body(
+  Regress_MoralCleansingDarkTriad,
+  file.path(writing_dir, "Tables", "Regress_MoralCleansingDarkTriad.tex")
+)
+
+Regress_MoralCleansingDarkTriad
+```
+
+
+#### Moral Licensing and Personality
+
+```{r}
+# Big 5
+moral_license_data <- df %>%
+  filter(
+    LUCK_treatment == 0,
+    task1_earnings %in% c(0.5, 1),
+    TreatmentSet == 1
+  )
+
+m1 <- lm(
+  task2_earnings ~ LIE_treatment * Giving_frame + Female * LIE_treatment,
+  data = moral_license_data
+)
+
+m2 <- lm(
+  task2_earnings ~ LIE_treatment *
+    Giving_frame +
+    Female * LIE_treatment +
+    Extraversion +
+    Agreeableness +
+    Conscientiousness +
+    Neuroticism +
+    Openness,
+  data = moral_license_data
+)
+
+m3 <- lm(
+  task2_earnings ~ LIE_treatment *
+    Giving_frame +
+    Female * LIE_treatment +
+    Extraversion * LIE_treatment +
+    Agreeableness * LIE_treatment +
+    Conscientiousness * LIE_treatment +
+    Neuroticism * LIE_treatment +
+    Openness * LIE_treatment,
+  data = moral_license_data
+)
+
+models <- list(
+  "(1)" = m1,
+  "(2)" = m2,
+  "(3)" = m3
+)
+
+coef_map <- c(
+  "LIE_treatment" = "Lie treatment",
+  "Giving_frame" = "Giving Frame",
+  "LIE_treatment:Giving_frame" = "Lie Treatment $\\times$ Giving Frame",
+  "Female" = "Female",
+  "LIE_treatment:Female" = "Female $\\times$ Lie Treatment",
+  "Extraversion" = "Extraversion",
+  "LIE_treatment:Extraversion" = "Extraversion $\\times$ Lie Treatment",
+  "Agreeableness" = "Agreeableness",
+  "LIE_treatment:Agreeableness" = "Agreeableness $\\times$ Lie Treatment",
+  "Conscientiousness" = "Conscientiousness",
+  "LIE_treatment:Conscientiousness" = "Conscientiousness $\\times$ Lie Treatment",
+  "Neuroticism" = "Neuroticism",
+  "LIE_treatment:Neuroticism" = "Neuroticism $\\times$ Lie Treatment",
+  "Openness" = "Openness",
+  "LIE_treatment:Openness" = "Openness $\\times$ Lie Treatment",
+  "(Intercept)" = "Constant"
+)
+
+gof_map <- tibble(
+  raw = "nobs",
+  clean = "N",
+  fmt = 0
+)
+
+stars_custom <- c(
+  "*" = 0.10,
+  "**" = 0.05,
+  "***" = 0.01
+)
+
+Regress_MoralLicensingBig5 <- modelsummary(
+  models,
+  coef_map = coef_map,
+  gof_map = gof_map,
+  stars = stars_custom,
+  estimate = "{estimate}{stars}",
+  statistic = "({std.error})",
+  escape = FALSE,
+  output = "tinytable"
+)
+
+Regress_MoralLicensingBig5 <- group_tt(
+  Regress_MoralLicensingBig5,
+  j = list("T2 Earnings if T1 Earnings = 0.5/1" = 2:3)
+)
+
+save_tinytable_body(
+  Regress_MoralLicensingBig5,
+  file.path(writing_dir, "Tables", "Regress_MoralLicensingBig5.tex")
+)
+
+Regress_MoralLicensingBig5
+
+m1 <- lm(
+  task2_earnings ~ LIE_treatment * Giving_frame + Female * LIE_treatment,
+  data = moral_license_data
+)
+
+m2 <- lm(
+  task2_earnings ~ LIE_treatment *
+    Giving_frame +
+    Female * LIE_treatment +
+    Narciss +
+    Psychop +
+    Machiavel,
+  data = moral_license_data
+)
+
+m3 <- lm(
+  task2_earnings ~ LIE_treatment *
+    Giving_frame +
+    Female * LIE_treatment +
+    Narciss * LIE_treatment +
+    Psychop * LIE_treatment +
+    Machiavel * LIE_treatment,
+  data = moral_license_data
+)
+
+models <- list(
+  "(1)" = m1,
+  "(2)" = m2,
+  "(3)" = m3
+)
+
+coef_map <- c(
+  "LIE_treatment" = "Lie treatment",
+  "Giving_frame" = "Giving Frame",
+  "LIE_treatment:Giving_frame" = "Lie Treatment $\\times$ Giving Frame",
+  "Female" = "Female",
+  "LIE_treatment:Female" = "Female $\\times$ Lie Treatment",
+  "Narciss" = "Narcissism",
+  "LIE_treatment:Narciss" = "Narcissism $\\times$ Lie Treatment",
+  "Psychop" = "Psychopathy",
+  "LIE_treatment:Psychop" = "Psychopathy $\\times$ Lie Treatment",
+  "Machiavel" = "Machiavel.",
+  "LIE_treatment:Machiavel" = "Machiavel. $\\times$ Lie Treatment",
+  "(Intercept)" = "Constant"
+)
+
+gof_map <- tibble(
+  raw = "nobs",
+  clean = "N",
+  fmt = 0
+)
+
+stars_custom <- c(
+  "*" = 0.10,
+  "**" = 0.05,
+  "***" = 0.01
+)
+
+Regress_MoralLicensingDarkTriad <- modelsummary(
+  models,
+  coef_map = coef_map,
+  gof_map = gof_map,
+  stars = stars_custom,
+  estimate = "{estimate}{stars}",
+  statistic = "({std.error})",
+  escape = FALSE,
+  output = "tinytable"
+)
+
+Regress_MoralLicensingDarkTriad <- group_tt(
+  Regress_MoralLicensingDarkTriad,
+  j = list("T2 Earnings if T1 Earnings = 0.5/1" = 2:4)
+)
+
+save_tinytable_body(
+  Regress_MoralLicensingDarkTriad,
+  file.path(writing_dir, "Tables", "Regress_MoralLicensingDarkTriad.tex")
+)
+
+Regress_MoralLicensingDarkTriad
+```
+
+#### Luck Cleansing and Personality
+
+```{r}
+# Big 5
+luck_cleanse_data <- df %>%
+  filter(
+    LIE_treatment == 0,
+    task1_earnings %in% c(2.5, 3),
+    TreatmentSet == 1
+  )
+
+m1 <- lm(
+  task2_earnings ~ LUCK_treatment * Giving_frame + Female * LIE_treatment,
+  data = luck_cleanse_data
+)
+
+m2 <- lm(
+  task2_earnings ~ LUCK_treatment *
+    Giving_frame +
+    Female * LIE_treatment +
+    Extraversion +
+    Agreeableness +
+    Conscientiousness +
+    Neuroticism +
+    Openness,
+  data = luck_cleanse_data
+)
+
+m3 <- lm(
+  task2_earnings ~ LUCK_treatment *
+    Giving_frame +
+    Female * LUCK_treatment +
+    Extraversion * LUCK_treatment +
+    Agreeableness * LUCK_treatment +
+    Conscientiousness * LUCK_treatment +
+    Neuroticism * LUCK_treatment +
+    Openness * LUCK_treatment,
+  data = luck_cleanse_data
+)
+
+models <- list(
+  "(1)" = m1,
+  "(2)" = m2,
+  "(3)" = m3
+)
+
+coef_map <- c(
+  "LUCK_treatment" = "Luck treatment",
+  "Giving_frame" = "Giving Frame",
+  "LUCK_treatment:Giving_frame" = "Luck Treatment $\\times$ Giving Frame",
+  "Female" = "Female",
+  "LUCK_treatment:Female" = "Female $\\times$ Luck Treatment",
+  "Extraversion" = "Extraversion",
+  "LUCK_treatment:Extraversion" = "Extraversion $\\times$ Luck Treatment",
+  "Agreeableness" = "Agreeableness",
+  "LUCK_treatment:Agreeableness" = "Agreeableness $\\times$ Luck Treatment",
+  "Conscientiousness" = "Conscientiousness",
+  "LUCK_treatment:Conscientiousness" = "Conscientiousness $\\times$ Luck Treatment",
+  "Neuroticism" = "Neuroticism",
+  "LUCK_treatment:Neuroticism" = "Neuroticism $\\times$ Luck Treatment",
+  "Openness" = "Openness",
+  "LUCK_treatment:Openness" = "Openness $\\times$ Luck Treatment",
+  "(Intercept)" = "Constant"
+)
+
+gof_map <- tibble(
+  raw = "nobs",
+  clean = "N",
+  fmt = 0
+)
+
+stars_custom <- c(
+  "*" = 0.10,
+  "**" = 0.05,
+  "***" = 0.01
+)
+
+Regress_LuckCleansingBig5 <- modelsummary(
+  models,
+  coef_map = coef_map,
+  gof_map = gof_map,
+  stars = stars_custom,
+  estimate = "{estimate}{stars}",
+  statistic = "({std.error})",
+  escape = FALSE,
+  output = "tinytable"
+)
+
+Regress_LuckCleansingBig5 <- group_tt(
+  Regress_LuckCleansingBig5,
+  j = list("T2 Earnings if T1 Earnings = 2.5/3" = 2:4)
+)
+
+save_tinytable_body(
+  Regress_LuckCleansingBig5,
+  file.path(writing_dir, "Tables", "Regress_LuckCleansingBig5.tex")
+)
+
+Regress_LuckCleansingBig5
+
+m1 <- lm(
+  task2_earnings ~ LUCK_treatment * Giving_frame + Female * LUCK_treatment,
+  data = luck_cleanse_data
+)
+
+m2 <- lm(
+  task2_earnings ~ LUCK_treatment *
+    Giving_frame +
+    Female * LUCK_treatment +
+    Narciss +
+    Psychop +
+    Machiavel,
+  data = luck_cleanse_data
+)
+
+m3 <- lm(
+  task2_earnings ~ LUCK_treatment *
+    Giving_frame +
+    Female * LUCK_treatment +
+    Narciss * LUCK_treatment +
+    Psychop * LUCK_treatment +
+    Machiavel * LUCK_treatment,
+  data = luck_cleanse_data
+)
+
+models <- list(
+  "(1)" = m1,
+  "(2)" = m2,
+  "(3)" = m3
+)
+
+coef_map <- c(
+  "LUCK_treatment" = "Luck treatment",
+  "Giving_frame" = "Giving Frame",
+  "LUCK_treatment:Giving_frame" = "Luck Treatment $\\times$ Giving Frame",
+  "Female" = "Female",
+  "LUCK_treatment:Female" = "Female $\\times$ Luck Treatment",
+  "Narciss" = "Narcissism",
+  "LUCK_treatment:Narciss" = "Narcissism $\\times$ Luck Treatment",
+  "Psychop" = "Psychopathy",
+  "LUCK_treatment:Psychop" = "Psychopathy $\\times$ Luck Treatment",
+  "Machiavel" = "Machiavel.",
+  "LUCK_treatment:Machiavel" = "Machiavel. $\\times$ Luck Treatment",
+  "(Intercept)" = "Constant"
+)
+
+gof_map <- tibble(
+  raw = "nobs",
+  clean = "N",
+  fmt = 0
+)
+
+stars_custom <- c(
+  "*" = 0.10,
+  "**" = 0.05,
+  "***" = 0.01
+)
+
+Regress_LuckCleansingDarkTriad <- modelsummary(
+  models,
+  coef_map = coef_map,
+  gof_map = gof_map,
+  stars = stars_custom,
+  estimate = "{estimate}{stars}",
+  statistic = "({std.error})",
+  escape = FALSE,
+  output = "tinytable"
+)
+
+Regress_LuckCleansingDarkTriad <- group_tt(
+  Regress_LuckCleansingDarkTriad,
+  j = list("T2 Earnings if T1 Earnings = 2.5/3" = 2:4)
+)
+
+save_tinytable_body(
+  Regress_LuckCleansingDarkTriad,
+  file.path(writing_dir, "Tables", "Regress_LuckCleansingDarkTriad.tex")
+)
+
+Regress_LuckCleansingDarkTriad
+```
+
+#### Luck Licensing and Personality
+
+```{r}
+# Big 5
+luck_license_data <- df %>%
+  filter(
+    LIE_treatment == 0,
+    task1_earnings %in% c(0.5, 1),
+    TreatmentSet == 1
+  )
+
+m1 <- lm(
+  task2_earnings ~ LUCK_treatment * Giving_frame + Female * LIE_treatment,
+  data = luck_license_data
+)
+
+m2 <- lm(
+  task2_earnings ~ LUCK_treatment *
+    Giving_frame +
+    Female * LIE_treatment +
+    Extraversion +
+    Agreeableness +
+    Conscientiousness +
+    Neuroticism +
+    Openness,
+  data = luck_license_data
+)
+
+m3 <- lm(
+  task2_earnings ~ LUCK_treatment *
+    Giving_frame +
+    Female * LUCK_treatment +
+    Extraversion * LUCK_treatment +
+    Agreeableness * LUCK_treatment +
+    Conscientiousness * LUCK_treatment +
+    Neuroticism * LUCK_treatment +
+    Openness * LUCK_treatment,
+  data = luck_license_data
+)
+
+models <- list(
+  "(1)" = m1,
+  "(2)" = m2,
+  "(3)" = m3
+)
+
+coef_map <- c(
+  "LUCK_treatment" = "Luck treatment",
+  "Giving_frame" = "Giving Frame",
+  "LUCK_treatment:Giving_frame" = "Luck Treatment $\\times$ Giving Frame",
+  "Female" = "Female",
+  "LUCK_treatment:Female" = "Female $\\times$ Luck Treatment",
+  "Extraversion" = "Extraversion",
+  "LUCK_treatment:Extraversion" = "Extraversion $\\times$ Luck Treatment",
+  "Agreeableness" = "Agreeableness",
+  "LUCK_treatment:Agreeableness" = "Agreeableness $\\times$ Luck Treatment",
+  "Conscientiousness" = "Conscientiousness",
+  "LUCK_treatment:Conscientiousness" = "Conscientiousness $\\times$ Luck Treatment",
+  "Neuroticism" = "Neuroticism",
+  "LUCK_treatment:Neuroticism" = "Neuroticism $\\times$ Luck Treatment",
+  "Openness" = "Openness",
+  "LUCK_treatment:Openness" = "Openness $\\times$ Luck Treatment",
+  "(Intercept)" = "Constant"
+)
+
+gof_map <- tibble(
+  raw = "nobs",
+  clean = "N",
+  fmt = 0
+)
+
+stars_custom <- c(
+  "*" = 0.10,
+  "**" = 0.05,
+  "***" = 0.01
+)
+
+Regress_LuckLicensingBig5 <- modelsummary(
+  models,
+  coef_map = coef_map,
+  gof_map = gof_map,
+  stars = stars_custom,
+  estimate = "{estimate}{stars}",
+  statistic = "({std.error})",
+  escape = FALSE,
+  output = "tinytable"
+)
+
+Regress_LuckLicensingBig5 <- group_tt(
+  Regress_LuckLicensingBig5,
+  j = list("T2 Earnings if T1 Earnings = 0.5/1" = 2:4)
+)
+
+save_tinytable_body(
+  Regress_LuckLicensingBig5,
+  file.path(writing_dir, "Tables", "Regress_LuckLicensingBig5.tex")
+)
+
+Regress_LuckLicensingBig5
+
+m1 <- lm(
+  task2_earnings ~ LUCK_treatment * Giving_frame + Female * LUCK_treatment,
+  data = luck_license_data
+)
+
+m2 <- lm(
+  task2_earnings ~ LUCK_treatment *
+    Giving_frame +
+    Female * LUCK_treatment +
+    Narciss +
+    Psychop +
+    Machiavel,
+  data = luck_license_data
+)
+
+m3 <- lm(
+  task2_earnings ~ LUCK_treatment *
+    Giving_frame +
+    Female * LUCK_treatment +
+    Narciss * LUCK_treatment +
+    Psychop * LUCK_treatment +
+    Machiavel * LUCK_treatment,
+  data = luck_license_data
+)
+
+models <- list(
+  "(1)" = m1,
+  "(2)" = m2,
+  "(3)" = m3
+)
+
+coef_map <- c(
+  "LUCK_treatment" = "Luck treatment",
+  "Giving_frame" = "Giving Frame",
+  "LUCK_treatment:Giving_frame" = "Luck Treatment $\\times$ Giving Frame",
+  "Female" = "Female",
+  "LUCK_treatment:Female" = "Female $\\times$ Luck Treatment",
+  "Narciss" = "Narcissism",
+  "LUCK_treatment:Narciss" = "Narcissism $\\times$ Luck Treatment",
+  "Psychop" = "Psychopathy",
+  "LUCK_treatment:Psychop" = "Psychopathy $\\times$ Luck Treatment",
+  "Machiavel" = "Machiavel.",
+  "LUCK_treatment:Machiavel" = "Machiavel. $\\times$ Luck Treatment",
+  "(Intercept)" = "Constant"
+)
+
+gof_map <- tibble(
+  raw = "nobs",
+  clean = "N",
+  fmt = 0
+)
+
+stars_custom <- c(
+  "*" = 0.10,
+  "**" = 0.05,
+  "***" = 0.01
+)
+
+Regress_LuckLicensingDarkTriad <- modelsummary(
+  models,
+  coef_map = coef_map,
+  gof_map = gof_map,
+  stars = stars_custom,
+  estimate = "{estimate}{stars}",
+  statistic = "({std.error})",
+  escape = FALSE,
+  output = "tinytable"
+)
+
+Regress_LuckLicensingDarkTriad <- group_tt(
+  Regress_LuckLicensingDarkTriad,
+  j = list("T2 Earnings if T1 Earnings = 0.5/1" = 2:4)
+)
+
+save_tinytable_body(
+  Regress_LuckLicensingDarkTriad,
+  file.path(writing_dir, "Tables", "Regress_LuckLicensingDarkTriad.tex")
+)
+
+Regress_LuckLicensingDarkTriad
+```
+
+### Appropriatenss Checks
+
+#### Task 1
+
+Graph
+
+```{r}
+#| fig-width: 10
+#| fig-height: 5
+#| out-width: "100%"
+social_dice_vars <- c(
+  "SocialApp_DiceLie_30",
+  "SocialApp_DiceLie_25",
+  "SocialApp_DiceLie_20",
+  "SocialApp_DiceLie_15",
+  "SocialApp_DiceLie_10",
+  "SocialApp_DiceNoLie",
+  "SocialApp_DiceLie_NoGain"
+)
+
+dice_long <- df %>%
+  filter(TreatmentSet == 2) %>%
+  select(treatment_num, all_of(social_dice_vars)) %>%
+  pivot_longer(
+    -treatment_num,
+    names_to = "choice",
+    values_to = "appropriateness"
+  ) %>%
+  group_by(treatment_num, choice) %>%
+  summarise(
+    n = sum(!is.na(appropriateness)),
+    mean_app = mean(appropriateness, na.rm = TRUE),
+    sd_app = sd(appropriateness, na.rm = TRUE),
+    se_app = sd_app / sqrt(n),
+    ci_low = mean_app - qt(0.975, df = n - 1) * se_app,
+    ci_high = mean_app + qt(0.975, df = n - 1) * se_app,
+    .groups = "drop"
+  )
+
+dice_long <- dice_long %>%
+  mutate(
+    choice = factor(
+      choice,
+      levels = c(
+        "SocialApp_DiceLie_30",
+        "SocialApp_DiceLie_25",
+        "SocialApp_DiceLie_20",
+        "SocialApp_DiceLie_15",
+        "SocialApp_DiceLie_10",
+        "SocialApp_DiceNoLie",
+        "SocialApp_DiceLie_NoGain"
+      )
+    )
+  )
+
+dice_treatment_labs <- c(
+  "7" = "Give–Lie",
+  "8" = "Take–Lie"
+)
+
+dice_choice_labs <- c(
+  "SocialApp_DiceLie_30" = "2/12 when 7",
+  "SocialApp_DiceLie_25" = "3/11 when 7",
+  "SocialApp_DiceLie_20" = "4/10 when 7",
+  "SocialApp_DiceLie_15" = "5/9 when 7",
+  "SocialApp_DiceLie_10" = "6/8 when 7",
+  "SocialApp_DiceNoLie" = "7 when 7",
+  "SocialApp_DiceLie_NoGain" = "9 when 5"
+)
+
+bar_cols_dice <- c(
+  "#76a1c9", # light blue",
+  "#8b3f46",
+  "#5b7f2b",
+  "#e38900",
+  "#6f8f87",
+  "#cc003d",
+  "#9a92d6"
+)
+
+p_dice <- ggplot(
+  dice_long,
+  aes(x = factor(treatment_num), y = mean_app, fill = choice)
+) +
+  geom_col(
+    position = position_dodge(width = 0.85),
+    width = 0.8,
+    alpha = 0.9
+  ) +
+  geom_errorbar(
+    aes(ymin = ci_low, ymax = ci_high),
+    position = position_dodge(width = 0.85),
+    width = 0.2,
+    linewidth = 0.5,
+    color = "black"
+  ) +
+  scale_x_discrete(labels = dice_treatment_labs) +
+  scale_fill_manual(values = bar_cols_dice, labels = dice_choice_labs) +
+  scale_y_continuous(
+    breaks = c(0, 2, 4, 6),
+    expand = c(0, 0)
+  ) +
+  coord_cartesian(ylim = c(0, 6.2)) +
+  labs(
+    title = "Social Appro. of Dice Reporting",
+    x = NULL,
+    y = "Appropriateness on 6 Point Scale"
+  ) +
+  base_theme +
+  theme(
+    legend.position = "bottom",
+    legend.direction = "horizontal"
+  ) +
+  guides(fill = guide_legend(nrow = 2))
+
+p_dice
+
+ggsave(
+  file.path(writing_dir, "Figures", "SocialAppropDice.pdf"),
+  p_dice,
+  width = 9,
+  height = 6
+)
+```
+
+Paired signed-rank tests by treatment group
+
+```{r}
+signrank_dice_by_treatment <- df %>%
+  filter(TreatmentSet == 2) %>%
+  group_by(treatment) %>%
+  summarise(
+    p_NoLie_Lie30 = tryCatch(
+      wilcox.test(
+        SocialApp_DiceNoLie,
+        SocialApp_DiceLie_30,
+        paired = TRUE,
+        exact = FALSE,
+        correct = FALSE
+      )$p.value,
+      error = function(e) NA_real_
+    ),
+    p_NoLie_Lie25 = tryCatch(
+      wilcox.test(
+        SocialApp_DiceNoLie,
+        SocialApp_DiceLie_25,
+        paired = TRUE,
+        exact = FALSE,
+        correct = FALSE
+      )$p.value,
+      error = function(e) NA_real_
+    ),
+    p_NoLie_Lie20 = tryCatch(
+      wilcox.test(
+        SocialApp_DiceNoLie,
+        SocialApp_DiceLie_20,
+        paired = TRUE,
+        exact = FALSE,
+        correct = FALSE
+      )$p.value,
+      error = function(e) NA_real_
+    ),
+    p_NoLie_Lie15 = tryCatch(
+      wilcox.test(
+        SocialApp_DiceNoLie,
+        SocialApp_DiceLie_15,
+        paired = TRUE,
+        exact = FALSE,
+        correct = FALSE
+      )$p.value,
+      error = function(e) NA_real_
+    ),
+    p_NoLie_Lie10 = tryCatch(
+      wilcox.test(
+        SocialApp_DiceNoLie,
+        SocialApp_DiceLie_10,
+        paired = TRUE,
+        exact = FALSE,
+        correct = FALSE
+      )$p.value,
+      error = function(e) NA_real_
+    ),
+    p_NoLie_NoGain = tryCatch(
+      wilcox.test(
+        SocialApp_DiceNoLie,
+        SocialApp_DiceLie_NoGain,
+        paired = TRUE,
+        exact = FALSE,
+        correct = FALSE
+      )$p.value,
+      error = function(e) NA_real_
+    ),
+  )
+
+print(kable(signrank_dice_by_treatment))
+
+signrank_dice_by_treatment <- df %>%
+  filter(TreatmentSet == 2) %>%
+  group_by(treatment) %>%
+  summarise(
+    p_Lie25_Lie30 = tryCatch(
+      wilcox.test(
+        SocialApp_DiceLie_25,
+        SocialApp_DiceLie_30,
+        paired = TRUE,
+        exact = FALSE,
+        correct = FALSE
+      )$p.value,
+      error = function(e) NA_real_
+    ),
+    p_Lie20_Lie30 = tryCatch(
+      wilcox.test(
+        SocialApp_DiceLie_20,
+        SocialApp_DiceLie_30,
+        paired = TRUE,
+        exact = FALSE,
+        correct = FALSE
+      )$p.value,
+      error = function(e) NA_real_
+    ),
+  )
+
+kable(signrank_dice_by_treatment)
+```
+
+#### Task 2
+
+Graph data all treatments separately
+
+```{r}
+#| fig-width: 10
+#| fig-height: 5
+#| out-width: "100%"
+social_give_vars <- c(
+  "SocialApp_Give_00",
+  "SocialApp_Give_05",
+  "SocialApp_Give_10",
+  "SocialApp_Give_15",
+  "SocialApp_Give_20",
+  "SocialApp_Give_25",
+  "SocialApp_Give_30"
+)
+
+give_long <- df %>%
+  filter(TreatmentSet == 1) %>%
+  select(treatment_num, all_of(social_give_vars)) %>%
+  pivot_longer(
+    -treatment_num,
+    names_to = "choice",
+    values_to = "appropriateness"
+  ) %>%
+  group_by(treatment_num, choice) %>%
+  summarise(
+    n = sum(!is.na(appropriateness)),
+    mean_app = mean(appropriateness, na.rm = TRUE),
+    sd_app = sd(appropriateness, na.rm = TRUE),
+    se_app = sd_app / sqrt(n),
+    ci_low = mean_app - qt(0.975, df = n - 1) * se_app,
+    ci_high = mean_app + qt(0.975, df = n - 1) * se_app,
+    .groups = "drop"
+  )
+
+social_take_vars <- c(
+  "SocialApp_Take_30",
+  "SocialApp_Take_25",
+  "SocialApp_Take_20",
+  "SocialApp_Take_15",
+  "SocialApp_Take_10",
+  "SocialApp_Take_05",
+  "SocialApp_Take_00"
+)
+
+take_long <- df %>%
+  filter(TreatmentSet == 1) %>%
+  select(treatment_num, all_of(social_take_vars)) %>%
+  pivot_longer(
+    -treatment_num,
+    names_to = "choice",
+    values_to = "appropriateness"
+  ) %>%
+  group_by(treatment_num, choice) %>%
+  summarise(
+    n = sum(!is.na(appropriateness)),
+    mean_app = mean(appropriateness, na.rm = TRUE),
+    sd_app = sd(appropriateness, na.rm = TRUE),
+    se_app = sd_app / sqrt(n),
+    ci_low = mean_app - qt(0.975, df = n - 1) * se_app,
+    ci_high = mean_app + qt(0.975, df = n - 1) * se_app,
+    .groups = "drop"
+  )
+
+give_long <- give_long %>%
+  mutate(
+    amount_label = factor(
+      c("$0.0", "$0.5", "$1.0", "$1.5", "$2.0", "$2.5", "$3.0")[match(
+        choice,
+        c(
+          "SocialApp_Give_00",
+          "SocialApp_Give_05",
+          "SocialApp_Give_10",
+          "SocialApp_Give_15",
+          "SocialApp_Give_20",
+          "SocialApp_Give_25",
+          "SocialApp_Give_30"
+        )
+      )],
+      levels = c("$0.0", "$0.5", "$1.0", "$1.5", "$2.0", "$2.5", "$3.0")
+    )
+  )
+
+take_long <- take_long %>%
+  mutate(
+    amount_label = factor(
+      c("$3.0", "$2.5", "$2.0", "$1.5", "$1.0", "$0.5", "$0.0")[match(
+        choice,
+        c(
+          "SocialApp_Take_30",
+          "SocialApp_Take_25",
+          "SocialApp_Take_20",
+          "SocialApp_Take_15",
+          "SocialApp_Take_10",
+          "SocialApp_Take_05",
+          "SocialApp_Take_00"
+        )
+      )],
+      levels = c("$0.0", "$0.5", "$1.0", "$1.5", "$2.0", "$2.5", "$3.0")
+    )
+  )
+
+treatment_labs <- c(
+  "1" = "Base\nGive",
+  "2" = "Luck\nGive",
+  "3" = "Lie\nGive",
+  "4" = "Base\nTake",
+  "5" = "Luck\nTake",
+  "6" = "Lie\nTake"
+)
+
+give_choice_labs <- c(
+  "SocialApp_Give_00" = "$0.0",
+  "SocialApp_Give_05" = "$0.5",
+  "SocialApp_Give_10" = "$1.0",
+  "SocialApp_Give_15" = "$1.5",
+  "SocialApp_Give_20" = "$2.0",
+  "SocialApp_Give_25" = "$2.5",
+  "SocialApp_Give_30" = "$3.0"
+)
+
+take_choice_labs <- c(
+  "SocialApp_Take_30" = "$3.0",
+  "SocialApp_Take_25" = "$2.5",
+  "SocialApp_Take_20" = "$2.0",
+  "SocialApp_Take_15" = "$1.5",
+  "SocialApp_Take_10" = "$1.0",
+  "SocialApp_Take_05" = "$0.5",
+  "SocialApp_Take_00" = "$0.0"
+)
+
+bar_cols <- c(
+  "#76a1c9", # light blue
+  "#8b3f46", # muted red/brown
+  "#5b7f2b", # olive green
+  "#e38900", # orange
+  "#6f8f87", # blue-green
+  "#cc003d", # red
+  "#9a92d6" # lavender
+)
+
+p_give <- ggplot(
+  give_long,
+  aes(x = factor(treatment_num), y = mean_app, fill = amount_label)
+) +
+  geom_col(position = position_dodge(width = 0.85), width = 0.8) +
+  geom_errorbar(
+    aes(ymin = ci_low, ymax = ci_high),
+    position = position_dodge(width = 0.85),
+    width = 0.2,
+    linewidth = 0.5
+  ) +
+  scale_x_discrete(labels = treatment_labs) +
+  scale_fill_manual(
+    values = bar_cols,
+    labels = give_choice_labs,
+    name = "Give/Take Amount"
+  ) +
+  scale_y_continuous(
+    breaks = c(0, 2, 4, 6),
+    expand = c(0, 0)
+  ) +
+  coord_cartesian(ylim = c(1, 6)) +
+  labs(
+    title = "Social Appro. of Giving",
+    x = NULL,
+    y = "Appropriateness on 6 Point Scale"
+  ) +
+  base_theme +
+  theme(
+    axis.text.x = element_text(size = 10, lineheight = 0.9)
+  )
+
+p_take <- ggplot(
+  take_long,
+  aes(x = factor(treatment_num), y = mean_app, fill = amount_label)
+) +
+  geom_col(position = position_dodge(width = 0.85), width = 0.8) +
+  geom_errorbar(
+    aes(ymin = ci_low, ymax = ci_high),
+    position = position_dodge(width = 0.85),
+    width = 0.2,
+    linewidth = 0.5
+  ) +
+  scale_x_discrete(labels = treatment_labs) +
+  scale_fill_manual(
+    values = bar_cols,
+    labels = take_choice_labs,
+    name = "Give/Take Amount"
+  ) +
+  scale_y_continuous(
+    breaks = c(0, 2, 4, 6),
+    expand = c(0, 0)
+  ) +
+  coord_cartesian(ylim = c(1, 6)) +
+  labs(
+    title = "Social Appro. of Taking",
+    x = NULL,
+    y = "Appropriateness on 6 Point Scale"
+  ) +
+  base_theme +
+  theme(
+    axis.text.x = element_text(size = 10, lineheight = 0.9)
+  )
+
+combined_plot <- p_give +
+  p_take +
+  plot_layout(guides = "collect") &
+  theme(
+    legend.position = "bottom",
+    legend.title = element_text(size = 9),
+    legend.text = element_text(size = 8),
+    legend.key.size = unit(0.35, "cm"),
+    legend.spacing.x = unit(0.1, "cm")
+  ) &
+  guides(fill = guide_legend(nrow = 1, byrow = TRUE))
+
+combined_plot
+
+ggsave(
+  file.path(writing_dir, "Figures", "SocialAppropTakeGive.pdf"),
+  combined_plot,
+  width = 12,
+  height = 7
+)
+```
+
+Graph data pooled across frames
+
+```{r}
+#| fig-width: 10
+#| fig-height: 5
+#| out-width: "100%"
+df <- df %>%
+  mutate(
+    treatment_pool = case_when(
+      treatment_num %in% c(1, 4) ~ "Base",
+      treatment_num %in% c(2, 5) ~ "Luck",
+      treatment_num %in% c(3, 6) ~ "Lie",
+      TRUE ~ NA_character_
+    )
+  )
+
+social_give_vars <- c(
+  "SocialApp_Give_00",
+  "SocialApp_Give_05",
+  "SocialApp_Give_10",
+  "SocialApp_Give_15",
+  "SocialApp_Give_20",
+  "SocialApp_Give_25",
+  "SocialApp_Give_30"
+)
+
+give_long_pool <- df %>%
+  filter(TreatmentSet == 1, !is.na(treatment_pool)) %>%
+  select(treatment_pool, all_of(social_give_vars)) %>%
+  pivot_longer(
+    -treatment_pool,
+    names_to = "choice",
+    values_to = "appropriateness"
+  ) %>%
+  group_by(treatment_pool, choice) %>%
+  summarise(
+    n = sum(!is.na(appropriateness)),
+    mean_app = mean(appropriateness, na.rm = TRUE),
+    sd_app = sd(appropriateness, na.rm = TRUE),
+    se_app = sd_app / sqrt(n),
+    ci_low = mean_app - qt(0.975, df = n - 1) * se_app,
+    ci_high = mean_app + qt(0.975, df = n - 1) * se_app,
+    .groups = "drop"
+  )
+
+social_take_vars <- c(
+  "SocialApp_Take_30",
+  "SocialApp_Take_25",
+  "SocialApp_Take_20",
+  "SocialApp_Take_15",
+  "SocialApp_Take_10",
+  "SocialApp_Take_05",
+  "SocialApp_Take_00"
+)
+
+take_long_pool <- df %>%
+  filter(TreatmentSet == 1, !is.na(treatment_pool)) %>%
+  select(treatment_pool, all_of(social_take_vars)) %>%
+  pivot_longer(
+    -treatment_pool,
+    names_to = "choice",
+    values_to = "appropriateness"
+  ) %>%
+  group_by(treatment_pool, choice) %>%
+  summarise(
+    n = sum(!is.na(appropriateness)),
+    mean_app = mean(appropriateness, na.rm = TRUE),
+    sd_app = sd(appropriateness, na.rm = TRUE),
+    se_app = sd_app / sqrt(n),
+    ci_low = mean_app - qt(0.975, df = n - 1) * se_app,
+    ci_high = mean_app + qt(0.975, df = n - 1) * se_app,
+    .groups = "drop"
+  )
+
+give_long_pool <- give_long_pool %>%
+  mutate(
+    treatment_pool = factor(treatment_pool, levels = c("Base", "Luck", "Lie")),
+    choice = factor(
+      choice,
+      levels = c(
+        "SocialApp_Give_00",
+        "SocialApp_Give_05",
+        "SocialApp_Give_10",
+        "SocialApp_Give_15",
+        "SocialApp_Give_20",
+        "SocialApp_Give_25",
+        "SocialApp_Give_30"
+      )
+    )
+  )
+
+give_long_pool <- give_long_pool %>%
+  mutate(
+    amount_label = factor(
+      c("$0.0", "$0.5", "$1.0", "$1.5", "$2.0", "$2.5", "$3.0")[match(
+        choice,
+        c(
+          "SocialApp_Give_00",
+          "SocialApp_Give_05",
+          "SocialApp_Give_10",
+          "SocialApp_Give_15",
+          "SocialApp_Give_20",
+          "SocialApp_Give_25",
+          "SocialApp_Give_30"
+        )
+      )],
+      levels = c("$0.0", "$0.5", "$1.0", "$1.5", "$2.0", "$2.5", "$3.0")
+    )
+  )
+
+take_long_pool <- take_long_pool %>%
+  mutate(
+    treatment_pool = factor(treatment_pool, levels = c("Base", "Luck", "Lie")),
+    choice = factor(
+      choice,
+      levels = c(
+        "SocialApp_Take_30",
+        "SocialApp_Take_25",
+        "SocialApp_Take_20",
+        "SocialApp_Take_15",
+        "SocialApp_Take_10",
+        "SocialApp_Take_05",
+        "SocialApp_Take_00"
+      )
+    )
+  )
+
+take_long_pool <- take_long_pool %>%
+  mutate(
+    amount_label = factor(
+      c("$3.0", "$2.5", "$2.0", "$1.5", "$1.0", "$0.5", "$0.0")[match(
+        choice,
+        c(
+          "SocialApp_Take_30",
+          "SocialApp_Take_25",
+          "SocialApp_Take_20",
+          "SocialApp_Take_15",
+          "SocialApp_Take_10",
+          "SocialApp_Take_05",
+          "SocialApp_Take_00"
+        )
+      )],
+      levels = c("$0.0", "$0.5", "$1.0", "$1.5", "$2.0", "$2.5", "$3.0")
+    )
+  )
+
+bar_cols <- c(
+  "#76a1c9", # light blue
+  "#8b3f46", # muted red/brown
+  "#5b7f2b", # olive green
+  "#e38900", # orange
+  "#6f8f87", # blue-green
+  "#cc003d", # red
+  "#9a92d6" # lavender
+)
+
+treatment_labs <- c(
+  "1" = "Base\nGive",
+  "2" = "Luck\nGive",
+  "3" = "Lie\nGive",
+  "4" = "Base\nTake",
+  "5" = "Luck\nTake",
+  "6" = "Lie\nTake"
+)
+
+give_choice_labs <- c(
+  "SocialApp_Give_00" = "$0.0",
+  "SocialApp_Give_05" = "$0.5",
+  "SocialApp_Give_10" = "$1.0",
+  "SocialApp_Give_15" = "$1.5",
+  "SocialApp_Give_20" = "$2.0",
+  "SocialApp_Give_25" = "$2.5",
+  "SocialApp_Give_30" = "$3.0"
+)
+
+take_choice_labs <- c(
+  "SocialApp_Take_30" = "$3.0",
+  "SocialApp_Take_25" = "$2.5",
+  "SocialApp_Take_20" = "$2.0",
+  "SocialApp_Take_15" = "$1.5",
+  "SocialApp_Take_10" = "$1.0",
+  "SocialApp_Take_05" = "$0.5",
+  "SocialApp_Take_00" = "$0.0"
+)
+
+p_give_pool <- ggplot(
+  give_long_pool,
+  aes(x = treatment_pool, y = mean_app, fill = amount_label)
+) +
+  geom_col(position = position_dodge(width = 0.85), width = 0.8) +
+  geom_errorbar(
+    aes(ymin = ci_low, ymax = ci_high),
+    position = position_dodge(width = 0.85),
+    width = 0.25,
+    linewidth = 0.5,
+    color = "black"
+  ) +
+  scale_fill_manual(
+    values = bar_cols,
+    name = "Give/Take Choice"
+  ) +
+  scale_y_continuous(
+    breaks = c(1.5, 3, 4.5, 6),
+    expand = c(0, 0)
+  ) +
+  coord_cartesian(ylim = c(1.5, 6)) +
+  labs(
+    title = "Social Appro. of Giving",
+    x = NULL,
+    y = "Appropriateness (6-point scale)"
+  ) +
+  base_theme
+
+p_take_pool <- ggplot(
+  take_long_pool,
+  aes(x = treatment_pool, y = mean_app, fill = amount_label)
+) +
+  geom_col(position = position_dodge(width = 0.85), width = 0.8) +
+  geom_errorbar(
+    aes(ymin = ci_low, ymax = ci_high),
+    position = position_dodge(width = 0.85),
+    width = 0.25,
+    linewidth = 0.5,
+    color = "black"
+  ) +
+  scale_fill_manual(
+    values = bar_cols,
+    name = "Give/Take Choice"
+  ) +
+  scale_y_continuous(
+    breaks = c(1.5, 3, 4.5, 6),
+    expand = c(0, 0)
+  ) +
+  coord_cartesian(ylim = c(1.5, 6)) +
+  labs(
+    title = "Social Appro. of Taking",
+    x = NULL,
+    y = "Appropriateness (6-point scale)"
+  ) +
+  base_theme
+
+combined_plot <- p_give_pool +
+  p_take_pool +
+  plot_layout(guides = "collect") &
+  theme(
+    legend.position = "bottom",
+    legend.title = element_text(size = 14),
+    legend.text = element_text(size = 14),
+    legend.key.size = unit(0.8, "cm"),
+    legend.spacing.x = unit(0.4, "cm")
+  ) &
+  guides(fill = guide_legend(nrow = 1, byrow = TRUE))
+
+combined_plot
+
+ggsave(
+  file.path(writing_dir, "Figures", "SocialAppropTakeGivePooled.pdf"),
+  combined_plot,
+  width = 12,
+  height = 7
+)
+```
+
+Paired signed-rank tests Taking 30 vs 25 and Giving 0 vs 0.5 by treatment group
+
+```{r}
+signrank_by_treatment <- df %>%
+  group_by(treatment) %>%
+  summarise(
+    p_Give00_Give05 = tryCatch(
+      wilcox.test(
+        SocialApp_Give_00,
+        SocialApp_Give_05,
+        paired = TRUE,
+        exact = FALSE,
+        correct = FALSE
+      )$p.value,
+      error = function(e) NA_real_
+    ),
+    p_Take30_Take25 = tryCatch(
+      wilcox.test(
+        SocialApp_Take_30,
+        SocialApp_Take_25,
+        paired = TRUE,
+        exact = FALSE,
+        correct = FALSE
+      )$p.value,
+      error = function(e) NA_real_
+    ),
+  )
+
+kable(signrank_by_treatment)
+```
+
+Paired sign-rank tests for comparing Taking to Giving of equivalent amounts
+
+```{r}
+signrank_overall <- tibble(
+  comparison = c(
+    "Take25 vs Give05",
+    "Take20 vs Give10",
+    "Take15 vs Give15",
+    "Take10 vs Give20",
+    "Take05 vs Give25",
+    "Take00 vs Give30"
+  ),
+  p_value = c(
+    wilcox.test(
+      df$SocialApp_Take_25,
+      df$SocialApp_Give_05,
+      paired = TRUE,
+      exact = FALSE,
+      correct = FALSE
+    )$p.value,
+    wilcox.test(
+      df$SocialApp_Take_20,
+      df$SocialApp_Give_10,
+      paired = TRUE,
+      exact = FALSE,
+      correct = FALSE
+    )$p.value,
+    wilcox.test(
+      df$SocialApp_Take_15,
+      df$SocialApp_Give_15,
+      paired = TRUE,
+      exact = FALSE,
+      correct = FALSE
+    )$p.value,
+    wilcox.test(
+      df$SocialApp_Take_10,
+      df$SocialApp_Give_20,
+      paired = TRUE,
+      exact = FALSE,
+      correct = FALSE
+    )$p.value,
+    wilcox.test(
+      df$SocialApp_Take_05,
+      df$SocialApp_Give_25,
+      paired = TRUE,
+      exact = FALSE,
+      correct = FALSE
+    )$p.value,
+    wilcox.test(
+      df$SocialApp_Take_00,
+      df$SocialApp_Give_30,
+      paired = TRUE,
+      exact = FALSE,
+      correct = FALSE
+    )$p.value
+  )
+)
+
+kable(signrank_overall)
+```
+
+Post-hoc rationalization test
+
+```{r}
+amount_give <- 3 - df$task2_earnings
+amount_take <- df$task2_earnings
+round_half <- function(x) round(x * 2) / 2
+
+df_kw <- df %>%
+  mutate(
+    id = clusterind,
+    chosen_amount = case_when(
+      Giving_frame == 1 ~ round_half(3 - task2_earnings),
+      Taking_frame == 1 ~ round_half(task2_earnings),
+      TRUE ~ NA_real_
+    ),
+    frame = case_when(
+      Giving_frame == 1 ~ "Give",
+      Taking_frame == 1 ~ "Take",
+      TRUE ~ NA_character_
+    )
+  )
+
+kw_give <- df_kw %>%
+  filter(frame == "Give", !is.na(chosen_amount)) %>%
+  select(
+    id,
+    treatment,
+    treatment_label,
+    task1_earnings,
+    chosen_amount,
+    SocialApp_Give_00,
+    SocialApp_Give_05,
+    SocialApp_Give_10,
+    SocialApp_Give_15,
+    SocialApp_Give_20,
+    SocialApp_Give_25,
+    SocialApp_Give_30
+  ) %>%
+  pivot_longer(
+    cols = starts_with("SocialApp_Give_"),
+    names_to = "action",
+    values_to = "appropriateness"
+  ) %>%
+  mutate(
+    domain = "Give",
+    action_amount = str_extract(action, "\\d+$") %>% as.numeric() / 10,
+    chosen = as.integer(abs(action_amount - chosen_amount) < 1e-6)
+  )
+
+kw_take <- df_kw %>%
+  filter(frame == "Take", !is.na(chosen_amount)) %>%
+  select(
+    id,
+    treatment,
+    treatment_label,
+    task1_earnings,
+    chosen_amount,
+    SocialApp_Take_00,
+    SocialApp_Take_05,
+    SocialApp_Take_10,
+    SocialApp_Take_15,
+    SocialApp_Take_20,
+    SocialApp_Take_25,
+    SocialApp_Take_30
+  ) %>%
+  pivot_longer(
+    cols = starts_with("SocialApp_Take_"),
+    names_to = "action",
+    values_to = "appropriateness"
+  ) %>%
+  mutate(
+    domain = "Take",
+    action_amount = str_extract(action, "\\d+$") %>% as.numeric() / 10,
+    chosen = as.integer(abs(action_amount - chosen_amount) < 1e-6)
+  )
+
+kw_long <- bind_rows(kw_give, kw_take) %>%
+  filter(!is.na(appropriateness))
+
+choice_comparison <- kw_long %>%
+  group_by(domain, action_amount) %>%
+  summarise(
+    n_chosen = sum(chosen == 1),
+    n_not_chosen = sum(chosen == 0),
+    mean_if_chosen = mean(appropriateness[chosen == 1], na.rm = TRUE),
+    mean_if_not_chosen = mean(appropriateness[chosen == 0], na.rm = TRUE),
+    diff = mean_if_chosen - mean_if_not_chosen,
+    p_wilcox = tryCatch(
+      wilcox.test(
+        appropriateness[chosen == 1],
+        appropriateness[chosen == 0],
+        exact = FALSE
+      )$p.value,
+      error = function(e) NA_real_
+    ),
+    .groups = "drop"
+  )
+
+choice_comparison %>%
+  arrange(domain, action_amount) %>%
+  knitr::kable(digits = 3)
+```
+
+For between treatment testing for social norm differences, we use the fisher randomization test which we include the function for below:
+
+```{r}
+set.seed(42)
+
+# Create Functions
+fisher_randomization_test <- function(
+  data,
+  outcome,
+  group,
+  group1,
+  group0,
+  B = 10000,
+  statistic = c("mean", "rank")
+) {
+  statistic <- match.arg(statistic)
+
+  dat <- data %>%
+    transmute(
+      y = .data[[outcome]],
+      g = .data[[group]]
+    ) %>%
+    filter(!is.na(y), !is.na(g), g %in% c(group1, group0))
+
+  n1 <- sum(dat$g == group1)
+  n0 <- sum(dat$g == group0)
+
+  if (n1 == 0 | n0 == 0) {
+    return(tibble(
+      outcome = outcome,
+      n1 = n1,
+      n0 = n0,
+      mean1 = NA_real_,
+      mean0 = NA_real_,
+      observed_stat = NA_real_,
+      p_value = NA_real_
+    ))
+  }
+
+  stat_fun <- function(y, g) {
+    if (statistic == "mean") {
+      mean(y[g == group1], na.rm = TRUE) -
+        mean(y[g == group0], na.rm = TRUE)
+    } else {
+      r <- rank(y, ties.method = "average")
+      mean(r[g == group1], na.rm = TRUE) -
+        mean(r[g == group0], na.rm = TRUE)
+    }
+  }
+
+  observed_stat <- stat_fun(dat$y, dat$g)
+
+  perm_stats <- replicate(B, {
+    g_perm <- sample(dat$g, replace = FALSE)
+    stat_fun(dat$y, g_perm)
+  })
+
+  p_value <- (sum(abs(perm_stats) >= abs(observed_stat)) + 1) / (B + 1)
+
+  tibble(
+    outcome = outcome,
+    n1 = n1,
+    n0 = n0,
+    mean1 = mean(dat$y[dat$g == group1], na.rm = TRUE),
+    mean0 = mean(dat$y[dat$g == group0], na.rm = TRUE),
+    observed_stat = observed_stat,
+    p_value = p_value
+  )
+}
+
+
+run_fisher_tests <- function(
+  data,
+  outcomes,
+  group,
+  group1,
+  group0,
+  B = 10000,
+  statistic = "mean"
+) {
+  map_dfr(
+    outcomes,
+    ~ fisher_randomization_test(
+      data = data,
+      outcome = .x,
+      group = group,
+      group1 = group1,
+      group0 = group0,
+      B = B,
+      statistic = statistic
+    )
+  )
+}
+
+# Create Task 2 Group and Norm-Rating Variables
+df_rit <- df %>%
+  mutate(
+    Task2_group = case_when(
+      Giving_frame == 1 ~ "Giving",
+      Taking_frame == 1 ~ "Taking",
+      TRUE ~ NA_character_
+    )
+  )
+df_rit %>%
+  filter(TreatmentSet == 1)
+
+give_norm_vars <- c(
+  "SocialApp_Give_00",
+  "SocialApp_Give_05",
+  "SocialApp_Give_10",
+  "SocialApp_Give_15",
+  "SocialApp_Give_20",
+  "SocialApp_Give_25",
+  "SocialApp_Give_30"
+)
+
+take_norm_vars <- c(
+  "SocialApp_Take_00",
+  "SocialApp_Take_05",
+  "SocialApp_Take_10",
+  "SocialApp_Take_15",
+  "SocialApp_Take_20",
+  "SocialApp_Take_25",
+  "SocialApp_Take_30"
+)
+
+# Run Tests
+task2_give_rit <- run_fisher_tests(
+  data = df_rit %>% filter(TreatmentSet == 1),
+  outcomes = give_norm_vars,
+  group = "Task2_group",
+  group1 = "Giving",
+  group0 = "Taking",
+  B = 10000,
+  statistic = "mean"
+) %>%
+  mutate(norm_task = "Giving ratings")
+
+
+task2_take_rit <- run_fisher_tests(
+  data = df_rit %>% filter(TreatmentSet == 1),
+  outcomes = take_norm_vars,
+  group = "Task2_group",
+  group1 = "Giving",
+  group0 = "Taking",
+  B = 10000,
+  statistic = "mean"
+) %>%
+  mutate(norm_task = "Taking ratings")
+
+# Apply Bonferroni Correction
+task2_rit_all <- bind_rows(
+  task2_give_rit,
+  task2_take_rit
+) %>%
+  mutate(
+    p_bonferroni = p.adjust(p_value, method = "bonferroni")
+  ) %>%
+  select(
+    norm_task,
+    outcome,
+    n1,
+    n0,
+    mean1,
+    mean0,
+    observed_stat,
+    p_value,
+    p_bonferroni
+  )
+
+# Format for Table
+fmt_p <- function(x) {
+  case_when(
+    is.na(x) ~ "",
+    x < 0.001 ~ "<0.001",
+    TRUE ~ sprintf("%.3f", x)
+  )
+}
+
+fmt_num <- function(x, digits = 3) {
+  ifelse(is.na(x), "", sprintf(paste0("%.", digits, "f"), x))
+}
+rating_labels <- tibble(
+  outcome = c(give_norm_vars, take_norm_vars),
+  rating_label = c(
+    "Giving \\$0.0",
+    "Giving \\$0.5",
+    "Giving \\$1.0",
+    "Giving \\$1.5",
+    "Giving \\$2.0",
+    "Giving \\$2.5",
+    "Giving \\$3.0",
+    "Taking \\$0.0",
+    "Taking \\$0.5",
+    "Taking \\$1.0",
+    "Taking \\$1.5",
+    "Taking \\$2.0",
+    "Taking \\$2.5",
+    "Taking \\$3.0"
+  ),
+  amount_order = c(
+    0.0,
+    0.5,
+    1.0,
+    1.5,
+    2.0,
+    2.5,
+    3.0,
+    0.0,
+    0.5,
+    1.0,
+    1.5,
+    2.0,
+    2.5,
+    3.0
+  )
+)
+
+task2_rit_table_df <- task2_rit_all %>%
+  left_join(rating_labels, by = "outcome") %>%
+  mutate(
+    norm_task = factor(
+      norm_task,
+      levels = c("Giving ratings", "Taking ratings")
+    )
+  ) %>%
+  arrange(norm_task, amount_order) %>%
+  mutate(
+    `Appropriateness Item` = rating_label,
+    `Giving Frame` = fmt_num(mean1),
+    `Taking Frame` = fmt_num(mean0),
+    `Difference` = fmt_num(observed_stat),
+    `p-value` = fmt_num(p_value),
+    `Bonferroni` = fmt_p(p_bonferroni)
+  )
+task2_rit_table_display <- task2_rit_table_df %>%
+  select(
+    `Appropriateness Item`,
+    `Giving Frame`,
+    `Taking Frame`,
+    `Difference`,
+    `p-value`,
+    `Bonferroni`
+  )
+
+n_give <- sum(task2_rit_table_df$norm_task == "Giving ratings")
+n_take <- sum(task2_rit_table_df$norm_task == "Taking ratings")
+
+Task2_RIT_Table <- tt(
+  task2_rit_table_display,
+)
+
+Task2_RIT_Table <- style_tt(
+  Task2_RIT_Table,
+  j = 1,
+  align = "l"
+)
+
+Task2_RIT_Table <- style_tt(
+  Task2_RIT_Table,
+  j = 2:ncol(task2_rit_table_display),
+  align = "c"
+)
+
+Task2_RIT_Table <- group_tt(
+  Task2_RIT_Table,
+  i = c(
+    "Giving ratings" = 1,
+    "Taking ratings" = n_give + 1
+  ),
+  j = list(
+    "Mean Rating" = 2:3,
+    "Test Results" = 4:6
+  )
+)
+
+Task2_RIT_Table
+
+save_tinytable_body(
+  Task2_RIT_Table,
+  file.path(writing_dir, "Tables", "Task2_Fisher_Randomization_Tests.tex")
+)
+```
+
+### Controlling for Feeling Lucky
+
+
+```{r}
+#| fig-width: 12
+#| fig-height: 5
+#| out-width: "100%"
+# Moral Cleansing Graph
+task2_avg <- df %>%
+  mutate(
+    task1_hyp_group = case_when(
+      task1_earnings %in% c(2.5, 3.0) ~ "2.5/3.0",
+      task1_earnings %in% c(0.5, 1.0) ~ "0.5/1.0",
+      TRUE ~ as.character(task1_earnings)
+    )
+  ) %>%
+  group_by(treatment, task1_hyp_group, treatment_label) %>%
+  summarise(
+    task2_earnings_avg_hypgroups = mean(task2_earnings, na.rm = TRUE),
+    se = sd(task2_earnings, na.rm = TRUE) / sqrt(sum(!is.na(task2_earnings))),
+    ci_lower = task2_earnings_avg_hypgroups - 1.96 * se,
+    ci_upper = task2_earnings_avg_hypgroups + 1.96 * se,
+    .groups = "drop"
+  )
+
+FeelingLuckyButMoral_Graph <- task2_avg %>%
+  filter(
+    treatment %in%
+      c(
+        "Luck_Giving",
+        "Lie_Giving",
+        "Luck_Taking",
+        "Lie_Taking"
+      ),
+    task1_hyp_group == "2.5/3.0"
+  ) %>%
+  mutate(
+    treatment_label = factor(
+      as.character(treatment_label),
+      levels = c("Luck-Take", "Lie–Take", "Luck-Give", "Lie–Give")
+    ),
+    frame_group = factor(
+      case_when(
+        treatment_label %in% c("Luck-Give", "Lie–Give") ~ "Giving Frame",
+        treatment_label %in% c("Luck-Take", "Lie–Take") ~ "Taking Frame"
+      ),
+      levels = c("Giving Frame", "Taking Frame")
+    )
+  ) %>%
+  ggplot(aes(
+    x = treatment_label,
+    y = task2_earnings_avg_hypgroups,
+    fill = treatment_label
+  )) +
+  geom_col(position = position_dodge(width = 0.9)) +
+  geom_errorbar(
+    aes(ymin = ci_lower, ymax = ci_upper),
+    position = position_dodge(width = 0.9),
+    width = 0.2,
+    color = "black",
+    linewidth = 0.5
+  ) +
+  facet_wrap(
+    ~frame_group,
+    scales = "free_x",
+    strip.position = "bottom"
+  ) +
+  scale_fill_manual(
+    values = c(
+      "Luck-Take" = "#1f4e79",
+      "Lie–Take" = "#76a1c9",
+      "Luck-Give" = "#1f4e79",
+      "Lie–Give" = "#76a1c9"
+    )
+  ) +
+  scale_y_continuous(
+    limits = c(0, 2.5),
+    breaks = seq(0, 2.5, 0.5),
+    expand = c(0, 0)
+  ) +
+  labs(
+    x = NULL,
+    y = "Average Task 2 Earnings",
+    title = "Luck and Moral Cleansing: Task 1 Earnings = 2.5/3",
+    fill = NULL
+  ) +
+  base_theme +
+  theme(
+    strip.placement = "outside",
+    strip.background = element_blank(),
+    strip.text = element_text(size = 12),
+    panel.spacing = unit(0.1, "cm"),
+    legend.position = "none"
+  )
+
+# Moral Licensing Graph
+task2_avg <- df %>%
+  mutate(
+    task1_hyp_group = case_when(
+      task1_earnings %in% c(2.5, 3.0) ~ "2.5/3.0",
+      task1_earnings %in% c(0.5, 1.0) ~ "0.5/1.0",
+      TRUE ~ as.character(task1_earnings)
+    )
+  ) %>%
+  group_by(treatment, task1_hyp_group, treatment_label) %>%
+  summarise(
+    task2_earnings_avg_hypgroups = mean(task2_earnings, na.rm = TRUE),
+    se = sd(task2_earnings, na.rm = TRUE) / sqrt(sum(!is.na(task2_earnings))),
+    ci_lower = task2_earnings_avg_hypgroups - 1.96 * se,
+    ci_upper = task2_earnings_avg_hypgroups + 1.96 * se,
+    .groups = "drop"
+  )
+
+FeelingUnluckyButMoral_Graph <- task2_avg %>%
+  filter(
+    treatment %in%
+      c(
+        "Luck_Giving",
+        "Lie_Giving",
+        "Luck_Taking",
+        "Lie_Taking"
+      ),
+    task1_hyp_group == "0.5/1.0"
+  ) %>%
+  mutate(
+    treatment_label = factor(
+      as.character(treatment_label),
+      levels = c("Luck-Take", "Lie–Take", "Luck-Give", "Lie–Give")
+    ),
+    frame_group = factor(
+      case_when(
+        treatment_label %in% c("Luck-Give", "Lie–Give") ~ "Giving Frame",
+        treatment_label %in% c("Luck-Take", "Lie–Take") ~ "Taking Frame"
+      ),
+      levels = c("Giving Frame", "Taking Frame")
+    )
+  ) %>%
+  ggplot(aes(
+    x = treatment_label,
+    y = task2_earnings_avg_hypgroups,
+    fill = treatment_label
+  )) +
+  geom_col(position = position_dodge(width = 0.9)) +
+  geom_errorbar(
+    aes(ymin = ci_lower, ymax = ci_upper),
+    position = position_dodge(width = 0.9),
+    width = 0.2,
+    color = "black",
+    linewidth = 0.5
+  ) +
+  facet_wrap(
+    ~frame_group,
+    scales = "free_x",
+    strip.position = "bottom"
+  ) +
+  scale_fill_manual(
+    values = c(
+      "Luck-Take" = "#1f4e79",
+      "Lie–Take" = "#76a1c9",
+      "Luck-Give" = "#1f4e79",
+      "Lie–Give" = "#76a1c9"
+    )
+  ) +
+  scale_y_continuous(
+    limits = c(0, 2.5),
+    breaks = seq(0, 2.5, 0.5),
+    expand = c(0, 0)
+  ) +
+  labs(
+    x = NULL,
+    y = "Average Task 2 Earnings",
+    title = "Luck and Moral Licensing: Task 1 Earnings = 0.5/1",
+    fill = NULL
+  ) +
+  base_theme +
+  theme(
+    strip.placement = "outside",
+    strip.background = element_blank(),
+    strip.text = element_text(size = 12),
+    panel.spacing = unit(0.1, "cm"),
+    legend.position = "none"
+  )
+
+LuckMoral_Graph <- FeelingLuckyButMoral_Graph + FeelingUnluckyButMoral_Graph
+
+LuckMoral_Graph
+
+ggsave(
+  file.path(writing_dir, "Figures", "LuckMoral_Graph.pdf"),
+  LuckMoral_Graph,
+  width = 12,
+  height = 5
+)
+
+ggsave(
+  file.path(writing_dir, "Figures", "FeelingLuckyButMoral_Graph.pdf"),
+  FeelingLuckyButMoral_Graph,
+  width = 6,
+  height = 5
+)
+
+ggsave(
+  file.path(writing_dir, "Figures", "FeelingUnluckyButMoral_Graph.pdf"),
+  FeelingUnluckyButMoral_Graph,
+  width = 6,
+  height = 5
+)
+```
+
+#### Non-Parametric
+
+```{r}
+# Moral Licensing: Lie vs Base, low task1 earnings
+
+## Taking
+print(wilcox.test(
+  task2_earnings ~ treatment,
+  data = df %>%
+    filter(
+      task1_earnings %in% c(0.5, 1),
+      treatment %in% c("Luck_Taking", "Lie_Taking")
+    ),
+  exact = FALSE,
+  correct = FALSE
+))
+
+## Giving
+print(wilcox.test(
+  task2_earnings ~ treatment,
+  data = df %>%
+    filter(
+      task1_earnings %in% c(0.5, 1),
+      treatment %in% c("Luck_Giving", "Lie_Giving")
+    ),
+  exact = FALSE,
+  correct = FALSE
+))
+
+# Moral Cleansing: Lie vs Base, high task1 earnings
+
+## Taking
+print(wilcox.test(
+  task2_earnings ~ treatment,
+  data = df %>%
+    filter(
+      task1_earnings %in% c(2.5, 3),
+      treatment %in% c("Luck_Taking", "Lie_Taking")
+    ),
+  exact = FALSE,
+  correct = FALSE
+))
+
+## Giving
+print(wilcox.test(
+  task2_earnings ~ treatment,
+  data = df %>%
+    filter(
+      task1_earnings %in% c(2.5, 3),
+      treatment %in% c("Luck_Giving", "Lie_Giving")
+    ),
+  exact = FALSE,
+  correct = FALSE
+))
+```
+
+### Self-selection Check
+
+#### Dice Outcomes
+
+Graph
+
+```{r}
+#| fig-width: 10
+#| fig-height: 5
+#| out-width: "100%"
+bar_cols <- c(
+  "#1f4e79", # dark blue
+  "#76a1c9" # light blue
+)
+
+bar_labels <- c(
+  "1" = "Lie Task Before Stage 2",
+  "2" = "Lie Task After Stage 2"
+)
+
+p_self_data <- df %>%
+  filter(!is.na(Dice_Sum_Pool_dumy), !is.na(Lie_TaskRnd)) %>%
+  count(Lie_TaskRnd, Dice_Sum_Pool_dumy) %>%
+  group_by(Lie_TaskRnd) %>%
+  mutate(
+    total = sum(n),
+    prop = n / total,
+    freq = prop * 100,
+    se = sqrt(prop * (1 - prop) / total),
+    ci_low = (prop - 1.96 * se) * 100,
+    ci_high = (prop + 1.96 * se) * 100
+  ) %>%
+  ungroup()
+
+p_self <- p_self_data %>%
+  ggplot(aes(
+    x = factor(Dice_Sum_Pool_dumy),
+    y = freq,
+    fill = factor(Lie_TaskRnd)
+  )) +
+  geom_col(position = position_dodge(width = 0.9)) +
+  geom_errorbar(
+    aes(ymin = ci_low, ymax = ci_high),
+    position = position_dodge(width = 0.9),
+    width = 0.2
+  ) +
+  scale_x_discrete(labels = c("2/12", "3/11", "4/10", "5/9", "6/8", "7")) +
+  scale_fill_manual(values = bar_cols, labels = bar_labels) +
+  labs(
+    x = "Two Dice Sums",
+    y = "Frequency %",
+    fill = "Lie Task Round"
+  ) +
+  base_theme
+
+p_self
+
+ggsave(
+  file.path(writing_dir, "Figures", "dicefreq_robustness.pdf"),
+  p_self,
+  width = 7,
+  height = 5
+)
+```
+
+KS tests by Lie_TaskRnd
+
+```{r}
+ks.test(
+  df$Dice_Sum[df$Lie_TaskRnd == 1],
+  df$Dice_Sum[df$Lie_TaskRnd == 2],
+  simulate.p.value = TRUE,
+  B = 10000
+)
+```
+
+#### Charity Outcomes
+
+Graph
+
+```{r}
+#| fig-width: 10
+#| fig-height: 5
+#| out-width: "100%"
+task2_avg_robust <- df %>%
+  filter(
+    treatment %in%
+      c(
+        "Lie_Giving",
+        "Giving_Lie",
+        "Lie_Taking",
+        "Taking_Lie"
+      )
+  ) %>%
+  group_by(treatment_num, treatment, task1_earnings) %>%
+  summarise(
+    n = sum(!is.na(task2_earnings)),
+    mean = mean(task2_earnings, na.rm = TRUE),
+    sd = sd(task2_earnings, na.rm = TRUE),
+    se = sd / sqrt(n),
+    ci_low = mean - qt(0.975, df = n - 1) * se,
+    ci_high = mean + qt(0.975, df = n - 1) * se,
+    .groups = "drop"
+  )
+
+bar_cols <- c(
+  "#1f4e79", # dark blue
+  "#76a1c9" # light blue
+)
+
+protask2robust <- task2_avg_robust %>%
+  filter(treatment %in% c("Lie_Giving", "Giving_Lie")) %>%
+  mutate(
+    treatment_label = factor(
+      treatment,
+      levels = c("Lie_Giving", "Giving_Lie"),
+      labels = c("Lie-Give", "Give-Lie")
+    )
+  ) %>%
+  ggplot(aes(
+    x = factor(task1_earnings),
+    y = mean,
+    fill = treatment_label
+  )) +
+  geom_col(position = position_dodge(width = 0.9)) +
+  geom_errorbar(
+    aes(ymin = ci_low, ymax = ci_high),
+    position = position_dodge(width = 0.9),
+    width = 0.2
+  ) +
+  scale_y_continuous(
+    breaks = seq(0.5, 2.5, by = 0.5),
+    expand = c(0, 0)
+  ) +
+  coord_cartesian(ylim = c(0.5, 3)) +
+  labs(
+    x = "Task 1 Earnings",
+    y = "Average Task 2 Earnings",
+    fill = NULL
+  ) +
+  scale_fill_manual(values = bar_cols) +
+  base_theme +
+  ggtitle("Giving Frame")
+
+antitask2robust <- task2_avg_robust %>%
+  filter(treatment %in% c("Lie_Taking", "Taking_Lie")) %>%
+  mutate(
+    treatment_label = factor(
+      treatment,
+      levels = c("Lie_Taking", "Taking_Lie"),
+      labels = c("Lie-Take", "Take-Lie")
+    )
+  ) %>%
+  ggplot(aes(
+    x = factor(task1_earnings),
+    y = mean,
+    fill = treatment_label
+  )) +
+  geom_col(position = position_dodge(width = 0.9)) +
+  geom_errorbar(
+    aes(ymin = ci_low, ymax = ci_high),
+    position = position_dodge(width = 0.9),
+    width = 0.2
+  ) +
+  scale_y_continuous(
+    breaks = seq(0.5, 2.5, by = 0.5),
+    expand = c(0, 0)
+  ) +
+  coord_cartesian(ylim = c(0.5, 3)) +
+  labs(
+    x = "Task 1 Earnings",
+    y = "Average Task 2 Earnings",
+    fill = NULL
+  ) +
+  scale_fill_manual(values = bar_cols) +
+  base_theme +
+  ggtitle("Taking Frame")
+
+p_task2_task1_robust <- protask2robust + antitask2robust
+
+p_task2_task1_robust
+
+ggsave(
+  file.path(writing_dir, "Figures", "task2vtask1robust.pdf"),
+  p_task2_task1_robust,
+  width = 10,
+  height = 5
+)
+```
+
+Statistical tests
+
+```{r}
+# Giving, task1_earnings == 3
+print(wilcox.test(
+  task2_earnings ~ treatment,
+  data = df %>%
+    filter(
+      task1_earnings == 3,
+      treatment %in% c("Lie_Giving", "Giving_Lie")
+    ),
+  exact = FALSE,
+  correct = FALSE
+))
+
+# Giving, task1_earnings == 2.5
+print(wilcox.test(
+  task2_earnings ~ treatment,
+  data = df %>%
+    filter(
+      task1_earnings == 2.5,
+      treatment %in% c("Lie_Giving", "Giving_Lie")
+    ),
+  exact = FALSE,
+  correct = FALSE
+))
+
+# Taking, task1_earnings == 3
+print(wilcox.test(
+  task2_earnings ~ treatment,
+  data = df %>%
+    filter(
+      task1_earnings == 3,
+      treatment %in% c("Lie_Taking", "Taking_Lie")
+    ),
+  exact = FALSE,
+  correct = FALSE
+))
+
+# Taking, task1_earnings == 2.5
+print(wilcox.test(
+  task2_earnings ~ treatment,
+  data = df %>%
+    filter(
+      task1_earnings == 2.5,
+      treatment %in% c("Lie_Taking", "Taking_Lie")
+    ),
+  exact = FALSE,
+  correct = FALSE
+))
+
+# Giving frame: Base vs Lie
+print(wilcox.test(
+  task2_earnings ~ treatment,
+  data = df %>%
+    filter(treatment %in% c("Bsl_Giving", "Lie_Giving")),
+  exact = FALSE,
+  correct = FALSE
+))
+
+# Taking frame: Base vs Lie
+print(wilcox.test(
+  task2_earnings ~ treatment,
+  data = df %>%
+    filter(treatment %in% c("Bsl_Taking", "Lie_Taking")),
+  exact = FALSE,
+  correct = FALSE
+))
+
+# Means
+print(
+  df %>%
+    filter(
+      treatment %in%
+        c("Bsl_Giving", "Lie_Giving", "Bsl_Taking", "Lie_Taking")
+    ) %>%
+    group_by(treatment) %>%
+    summarise(
+      mean_task2 = mean(task2_earnings, na.rm = TRUE),
+      n = sum(!is.na(task2_earnings)),
+      .groups = "drop"
+    )
+)
+```
+
+### Minimal Detectible Effect Size Analysis
+
+#### Tests and Calculations for MDE and Power
+
+Minimum Effect Size for 80% power, alpha = 0.05, one-sided test
+
+```{r}
+# 1. Luck Cleaning (Give)
+print(stats::power.t.test(
+  n = 44,
+  power = 0.80,
+  sd = mean(c(1.037, 0.951)),
+  sig.level = 0.05,
+  type = "two.sample",
+  alternative = "one.sided"
+))
+
+# 2. Luck Licensing (Give)
+print(stats::power.t.test(
+  n = 60,
+  power = 0.80,
+  sd = mean(c(0.983, 0.866)),
+  sig.level = 0.05,
+  type = "two.sample",
+  alternative = "one.sided"
+))
+
+# 3. Luck Licensing (Take)
+print(stats::power.t.test(
+  n = 60,
+  power = 0.80,
+  sd = mean(c(1.274, 1.073)),
+  sig.level = 0.05,
+  type = "two.sample",
+  alternative = "one.sided"
+))
+
+# 4. Moral Cleansing (Give)
+print(stats::power.t.test(
+  n = 44,
+  power = 0.80,
+  sd = mean(c(1.066, 0.951)),
+  sig.level = 0.05,
+  type = "two.sample",
+  alternative = "one.sided"
+))
+
+# 5. Moral Cleansing (Take)
+print(stats::power.t.test(
+  n = 59,
+  power = 0.80,
+  sd = mean(c(1.190, 1.198)),
+  sig.level = 0.05,
+  type = "two.sample",
+  alternative = "one.sided"
+))
+
+# 6. Moral Licensing (Give)
+print(stats::power.t.test(
+  n = 60,
+  power = 0.80,
+  sd = mean(c(1.107, 0.866)),
+  sig.level = 0.05,
+  type = "two.sample",
+  alternative = "one.sided"
+))
+```
+
+Power for effect size of 0.50
+
+```{r}
+print(stats::power.t.test(
+  n = 44,
+  d = 0.5,
+  sd = mean(c(1.037, 0.951)),
+  sig.level = 0.05,
+  type = "two.sample",
+  alternative = "one.sided"
+))
+
+# 2. Luck Licensing (Give)
+print(stats::power.t.test(
+  n = 60,
+  d = 0.5,
+  sd = mean(c(0.983, 0.866)),
+  sig.level = 0.05,
+  type = "two.sample",
+  alternative = "one.sided"
+))
+
+# 3. Luck Licensing (Take)
+print(stats::power.t.test(
+  n = 60,
+  d = 0.5,
+  sd = mean(c(1.274, 1.073)),
+  sig.level = 0.05,
+  type = "two.sample",
+  alternative = "one.sided"
+))
+
+# 4. Moral Cleansing (Give)
+print(stats::power.t.test(
+  n = 44,
+  d = 0.5,
+  sd = mean(c(1.066, 0.951)),
+  sig.level = 0.05,
+  type = "two.sample",
+  alternative = "one.sided"
+))
+
+# 5. Moral Cleansing (Take)
+print(stats::power.t.test(
+  n = 59,
+  d = 0.5,
+  sd = mean(c(1.190, 1.198)),
+  sig.level = 0.05,
+  type = "two.sample",
+  alternative = "one.sided"
+))
+
+# 6. Moral Licensing (Give)
+print(stats::power.t.test(
+  n = 60,
+  d = 0.5,
+  sd = mean(c(1.107, 0.866)),
+  sig.level = 0.05,
+  type = "two.sample",
+  alternative = "one.sided"
+))
+```
+
+#### Graph
+
+```{r}
+#| fig-width: 10
+#| fig-height: 5
+#| out-width: "100%"
+power_inputs <- tibble(
+  hypothesis = c(
+    "Luck Cleansing (Give)",
+    "Luck Licensing (Give)",
+    "Luck Licensing (Take)",
+    "Moral Cleansing (Give)",
+    "Moral Cleansing (Take)",
+    "Moral Licensing (Give)"
+  ),
+  n = c(44, 60, 60, 44, 59, 60),
+  sd1 = c(1.037, 0.983, 1.274, 1.066, 1.190, 1.107),
+  sd2 = c(0.951, 0.866, 1.073, 0.951, 1.198, 0.866)
+)
+
+power_curve <- power_inputs %>%
+  crossing(delta = seq(0.1, 1, by = 0.1)) %>%
+  rowwise() %>%
+  mutate(
+    power = stats::power.t.test(
+      n = n,
+      delta = delta,
+      sd = mean(c(sd1, sd2)),
+      sig.level = 0.05,
+      type = "two.sample",
+      alternative = "one.sided"
+    )$power
+  ) %>%
+  ungroup()
+
+p_power <- ggplot(power_curve, aes(delta, power, color = hypothesis)) +
+  geom_line(linewidth = 1) +
+  geom_hline(yintercept = 0.80, linetype = "dashed", color = "gray40") +
+  labs(
+    title = expression("Power Curve by Hypothesis, " * alpha == 0.05),
+    x = "Effect Size (Mean Difference)",
+    y = "Power",
+    color = NULL
+  ) +
+  base_theme
+
+p_power
+
+ggsave(
+  file.path(writing_dir, "Figures", "poweranal.pdf"),
+  p_power,
+  width = 8,
+  height = 5
+)
+```
+
+### Multiple Hypothesis Testing Correction
+
+The tests reported above evaluate each hypothesis separately under the Giving Frame and the Taking Frame, so it is natural to ask whether the reported significance partly reflects the number of comparisons rather than genuine effects. To address this, the p-values of the eight frame-specific hypothesis tests are adjusted using the Benjamini-Hochberg (1995) procedure to control the false discovery rate.
+
+```{r}
+# Directories holding the LaTeX table fragments used by the manuscript
+mht_table_dirs <- c(
+  file.path(writing_dir, "Tables"),
+  file.path(root_dir, "Writing with old Template", "Tables")
+)
+
+save_mht_table <- function(table, file_name) {
+  for (target_dir in mht_table_dirs) {
+    if (dir.exists(target_dir)) {
+      save_tinytable_body(table, file.path(target_dir, file_name))
+    }
+  }
+}
+
+mht_fmt_p <- function(x) {
+  case_when(
+    is.na(x) ~ "",
+    x < 0.001 ~ "<0.001",
+    TRUE ~ sprintf("%.3f", x)
+  )
+}
+
+mht_fmt_num <- function(x, digits = 3) {
+  ifelse(is.na(x), "", sprintf(paste0("%.", digits, "f"), x))
+}
+
+# Main hypotheses and the Task 2 frames they are evaluated under
+mht_specs <- tribble(
+  ~hypothesis           , ~trt   , ~earn  ,
+  "H1: Luck Cleansing"  , "Luck" , "high" ,
+  "H2: Luck Licensing"  , "Luck" , "low"  ,
+  "H3: Moral Cleansing" , "Lie"  , "high" ,
+  "H4: Moral Licensing" , "Lie"  , "low"
+)
+```
+
+```{r}
+# Frame-specific non-parametric tests, adjusted as a single family of eight tests
+mht_frame_specs <- expand_grid(mht_specs, frame = c("Giving", "Taking"))
+
+mht_frames <- pmap_dfr(
+  list(
+    mht_frame_specs$hypothesis,
+    mht_frame_specs$trt,
+    mht_frame_specs$earn,
+    mht_frame_specs$frame
+  ),
+  function(hypothesis, trt, earn, frame) {
+    earnings_set <- if (earn == "high") c(2.5, 3) else c(0.5, 1)
+    treated_label <- paste0(trt, "_", frame)
+    base_label <- paste0("Bsl_", frame)
+
+    test_data <- df %>%
+      filter(
+        TreatmentSet == 1,
+        treatment %in% c(base_label, treated_label),
+        task1_earnings %in% earnings_set
+      )
+
+    test <- wilcox.test(
+      task2_earnings ~ treatment,
+      data = test_data,
+      exact = FALSE,
+      correct = FALSE
+    )
+
+    mean_treated <- mean(
+      test_data$task2_earnings[test_data$treatment == treated_label]
+    )
+    mean_base <- mean(
+      test_data$task2_earnings[test_data$treatment == base_label]
+    )
+
+    tibble(
+      hypothesis = hypothesis,
+      frame = frame,
+      mean_base = mean_base,
+      mean_treated = mean_treated,
+      difference = mean_treated - mean_base,
+      p_value = test$p.value,
+      n_obs = nrow(test_data)
+    )
+  }
+) %>%
+  mutate(p_bh = p.adjust(p_value, method = "BH"))
+
+mht_frames
+```
+
+```{r}
+mht_frames_table_df <- mht_frames %>%
+  transmute(
+    Hypothesis = hypothesis,
+    Frame = paste0(frame, " frame"),
+    Base = mht_fmt_num(mean_base),
+    Treated = mht_fmt_num(mean_treated),
+    Difference = mht_fmt_num(difference),
+    N = as.character(n_obs),
+    `Raw $p$` = mht_fmt_p(p_value),
+    `BH $p$` = mht_fmt_p(p_bh)
+  )
+
+MHT_Frames_Table <- tt(mht_frames_table_df)
+
+MHT_Frames_Table <- style_tt(
+  MHT_Frames_Table,
+  j = 1:2,
+  align = "l"
+)
+
+MHT_Frames_Table <- style_tt(
+  MHT_Frames_Table,
+  j = 3:ncol(mht_frames_table_df),
+  align = "c"
+)
+
+MHT_Frames_Table
+
+save_mht_table(MHT_Frames_Table, "MHT_Frame_Tests.tex")
+```
