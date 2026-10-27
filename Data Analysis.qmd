@@ -4886,7 +4886,7 @@ ggsave(
 
 ### Multiple Hypothesis Testing Correction
 
-The tests reported above evaluate each hypothesis separately under the Giving Frame and the Taking Frame, so it is natural to ask whether the reported significance partly reflects the number of comparisons rather than genuine effects. To address this, the p-values of the eight frame-specific hypothesis tests are adjusted using the Benjamini-Hochberg (1995) procedure to control the false discovery rate.
+The tests reported above evaluate each hypothesis separately under the Giving Frame and the Taking Frame. We define four testing families, one for each hypothesis (luck cleansing, luck licensing, moral cleansing, and moral licensing), with each family containing the Giving- and Taking-frame comparisons. To control the family-wise error rate within each hypothesis, we apply the Bonferroni correction separately within each two-test family; adjusted p-values are calculated as min(1, 2p) using unrounded p-values.
 
 ```{r}
 # Directories holding the LaTeX table fragments used by the manuscript
@@ -4926,7 +4926,8 @@ mht_specs <- tribble(
 ```
 
 ```{r}
-# Frame-specific non-parametric tests, adjusted as a single family of eight tests
+# Frame-specific non-parametric tests, adjusted within each hypothesis's
+# two-test family (Giving and Taking frames) using Bonferroni
 mht_frame_specs <- expand_grid(mht_specs, frame = c("Giving", "Taking"))
 
 mht_frames <- pmap_dfr(
@@ -4973,7 +4974,9 @@ mht_frames <- pmap_dfr(
     )
   }
 ) %>%
-  mutate(p_bh = p.adjust(p_value, method = "BH"))
+  group_by(hypothesis) %>%
+  mutate(p_bonferroni = p.adjust(p_value, method = "bonferroni")) %>%
+  ungroup()
 
 mht_frames
 ```
@@ -4988,7 +4991,7 @@ mht_frames_table_df <- mht_frames %>%
     Difference = mht_fmt_num(difference),
     N = as.character(n_obs),
     `Raw $p$` = mht_fmt_p(p_value),
-    `BH $p$` = mht_fmt_p(p_bh)
+    `Adj. $p$` = mht_fmt_p(p_bonferroni)
   )
 
 MHT_Frames_Table <- tt(mht_frames_table_df)
