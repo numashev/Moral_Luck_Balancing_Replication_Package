@@ -6,6 +6,7 @@ Replication package for *Moral and Luck Balancing* (Grossman, Karakostas, and Um
 
 - `Data/` — the experimental data, one workbook per session (`Session1.xlsx` to `Session26.xlsx`).
 - `Data Analysis.qmd` — the complete analysis: data preparation, descriptive statistics, figures, hypothesis tests, robustness checks, and the tables quoted in the paper.
+- `CODEBOOK.md` — definitions and coding for all 133 variables in the cleaned analysis dataset.
 - `Writing/` — output folder and manuscript source. Figures are exported to `Writing/Figures/` and LaTeX table fragments to `Writing/Tables/`. Both subfolders are created automatically when the document is rendered. `Writing/Moral_Balancing_Combined.tex` is the combined manuscript and online appendix source; `Writing/sample.bib` and the static appendix screenshots are included so it can be compiled directly.
 
 ## Requirements
