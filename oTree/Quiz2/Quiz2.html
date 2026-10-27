@@ -1,0 +1,278 @@
+{{ block style }}
+<style>
+    .statement {
+        font-size: 14px;
+    }
+</style>
+{{ endblock }}
+
+{{ block title }}
+<div style="text-align: center; font-weight: normal"> Quiz 2
+</div>
+{{ endblock }}
+{{ block content }}
+
+<div class="card bg-light text-justify mb-3">
+    <label style="text-align: justify">
+        <div class="card-body">
+            <p class="card-text">
+                Please indicate how well the following statements <b>describe your personality</b>, choosing whether you:
+            <p>
+            <ol>
+                <i>
+                    <li>strongly disagree</li>
+                    <li> disagree</li>
+                    <li>neither agree nor disagree</li>
+                    <li>agree</li>
+                    <li>strongly agree</li>
+
+                </i>
+            </ol>
+            </p>
+            There are no right or wrong answer, do not spend too much time on any statement.
+
+        </div>
+    </label>
+</div>
+
+
+<table class="table table-sm table-striped" style="width: 945px;">
+    <h4>I see myself as someone who…</h4>
+    <tr>
+        <td>
+
+            <p>1. …is reserved.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>strongly disagree</i>
+                </div>
+                {{ for choice in form.Quiz2_1 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>strongly agree</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p>2. …is generally trusting.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>strongly disagree</i>
+                </div>
+                {{ for choice in form.Quiz2_2 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>strongly agree</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <p>3. …tends to be lazy.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>strongly disagree</i>
+                </div>
+                {{ for choice in form.Quiz2_3 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>strongly agree</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p>4. …is relaxed, handles stress well.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>strongly disagree</i>
+                </div>
+                {{ for choice in form.Quiz2_4 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>strongly agree</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <p>5. …has few artistic interests.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>strongly disagree</i>
+                </div>
+                {{ for choice in form.Quiz2_5 }}
+                <div style="flex: 1; text-align: center">
+
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>strongly agree</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <p>6. …is outgoing, sociable.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>strongly disagree</i>
+                </div>
+                {{ for choice in form.Quiz2_6 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>strongly agree</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <p>7. …tends to find fault with others.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>strongly disagree</i>
+                </div>
+                {{ for choice in form.Quiz2_7 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>strongly agree</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p>8. …does a thorough job.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>strongly disagree</i>
+                </div>
+                {{ for choice in form.Quiz2_8 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>strongly agree</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p>9. …gets nervous easily.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>strongly disagree</i>
+                </div>
+                {{ for choice in form.Quiz2_9 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>strongly agree</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <p>10. …has an active imagination.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>strongly disagree</i>
+                </div>
+                {{ for choice in form.Quiz2_10 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>strongly agree</i>
+                </div>
+            </div>
+
+        </td>
+    </tr>
+</table>
+
+
+
+{{ next_button }}
+
+{{ endblock }}

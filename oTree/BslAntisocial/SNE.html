@@ -1,0 +1,731 @@
+{{ block styles }}
+<style>
+    .statement {
+        font-size: 14px;
+    }
+</style>
+{{ endblock }}
+
+{{ block title }}
+<div style="text-align: center; font-weight: normal">Part 3</div>
+{{ endblock }}
+{{ block content }}
+
+<div class="card bg-light text-justify mb-3">
+    <label style="text-align: justify">
+        <div class="card-body">
+            <p class="card-text">
+                In Part 3, you are asked to assess a set of hypothetical actions that might be completed by <b>other participants in an experiment</b>.
+
+            <p>For each of the following giving/taking actions, please guess the most common response provided by other participants in this experiment, where:
+            <ol>
+                <li>= very socially inappropriate</li>
+                <li>= socially inappropriate</li>
+                <li>= somewhat socially inappropriate</li>
+                <li>= somewhat socially appropriate</li>
+                <li>= socially appropriate</li>
+                <li>= very socially appropriate</li>
+            </ol>
+            </p>
+            If your assessment of <i>one randomly selected action</i> is the same as the most common response provided by other participants in this experiment, you will earn $1.00. Your payment will be processed within 2 - 3 days after all experimental sessions have been completed.
+
+
+        </div>
+    </label>
+</div>
+
+{{ if player.orderSNE == 1 }}
+
+<div style="text-align: center">
+    <h4><U>Set 1</U></h4>
+</div>
+
+<table class="table table-sm table-striped" style="width: 945px;">
+
+    <tr>
+        <td>
+
+            <p><U>Action 1</U>: the participant is provided with $3.00 and the participant decides <b>to give</b> $0.00 to the charity <i>Feed the Children</i>.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>very socially inappropriate</i>
+                </div>
+
+                {{ for choice in form.SNE_1 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>very socially appropriate</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p><U>Action 2</U>: the participant is provided with $3.00 and the participant decides <b>to give</b> $0.50 to the charity <i>Feed the Children</i>.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>very socially inappropriate</i>
+                </div>
+                {{ for choice in form.SNE_2 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>very socially appropriate</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <p><U>Action 3</U>: the participant is provided with $3.00 and the participant decides <b>to give</b> $1.00 to the charity <i>Feed the Children</i>.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>very socially inappropriate</i>
+                </div>
+                {{ for choice in form.SNE_3 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>very socially appropriate</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p><U>Action 4</U>: the participant is provided with $3.00 and the participant decides <b>to give</b> $1.50 to the charity <i>Feed the Children</i>.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>very socially inappropriate</i>
+                </div>
+                {{ for choice in form.SNE_4 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>very socially appropriate</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <p><U>Action 5</U>: the participant is provided with $3.00 and the participant decides <b>to give</b> $2.00 to the charity <i>Feed the Children</i>.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>very socially inappropriate</i>
+                </div>
+                {{ for choice in form.SNE_5 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>very socially appropriate</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <p><U>Action 6</U>: the participant is provided with $3.00 and the participant decides <b>to give</b> $2.50 to the charity <i>Feed the Children</i>. </p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>very socially inappropriate</i>
+                </div>
+                {{ for choice in form.SNE_6 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>very socially appropriate</i>
+                </div>
+
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <p><U>Action 7</U>: the participant is provided with $3.00 and the participant decides <b>to give</b> $3.00 to the charity <i>Feed the Children</i>. </p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>very socially inappropriate</i>
+                </div>
+                {{ for choice in form.SNE_7 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>very socially appropriate</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+</table>
+<br>
+<div style="text-align: center">
+    <h4><U>Set 2</U></h4>
+</div>
+<table class="table table-sm table-striped" style="width: 945px;">
+    <tr>
+        <td>
+            <p><U>Action 1</U>: the charity <i>Feed the Children</i> is provided with $3.00 and a participant decides <b>to take</b> $0.00 from the charity. </p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>very socially inappropriate</i>
+                </div>
+                {{ for choice in form.SNE_8 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>very socially appropriate</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p><U>Action 2</U>: the charity <i>Feed the Children</i> is provided with $3.00 and a participant decides <b>to take</b> $0.50 from the charity. </p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>very socially inappropriate</i>
+                </div>
+                {{ for choice in form.SNE_9 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>very socially appropriate</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <p><U>Action 3</U>: the charity <i>Feed the Children</i> is provided with $3.00 and a participant decides <b>to take</b> $1.00 from the charity. </p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>very socially inappropriate</i>
+                </div>
+                {{ for choice in form.SNE_10 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>very socially appropriate</i>
+                </div>
+            </div>
+
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p><U>Action 4</U>: the charity <i>Feed the Children</i> is provided with $3.00 and a participant decides <b>to take</b> $1.50 from the charity. </p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>very socially inappropriate</i>
+                </div>
+                {{ for choice in form.SNE_11 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>very socially appropriate</i>
+                </div>
+            </div>
+
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <p><U>Action 5</U>: the charity <i>Feed the Children</i> is provided with $3.00 and a participant decides <b>to take</b> $2.00 from the charity. </p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>very socially inappropriate</i>
+                </div>
+                {{ for choice in form.SNE_12 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>very socially appropriate</i>
+                </div>
+            </div>
+
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p><U>Action 6</U>: the charity <i>Feed the Children</i> is provided with $3.00 and a participant decides <b>to take</b> $2.50 from the charity. </p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>very socially inappropriate</i>
+                </div>
+                {{ for choice in form.SNE_13 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>very socially appropriate</i>
+                </div>
+            </div>
+
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p><U>Action 7</U>: the charity <i>Feed the Children</i> is provided with $3.00 and a participant decides <b>to take</b> $3.00 from the charity. </p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>very socially inappropriate</i>
+                </div>
+                {{ for choice in form.SNE_14 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>very socially appropriate</i>
+                </div>
+            </div>
+
+        </td>
+    </tr>
+
+
+</table>
+
+{{ endif }}
+
+{{ if player.orderSNE == 2 }}
+<div style="text-align: center">
+    <h4><U>Set 1</U></h4>
+</div>
+<table class="table table-sm table-striped" style="width: 945px;">
+    <tr>
+        <td>
+            <p><U>Action 1</U>: the charity <i>Feed the Children</i> is provided with $3.00 and a participant decides <b>to take</b> $0.00 from the charity. </p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>very socially inappropriate</i>
+                </div>
+                {{ for choice in form.SNE_8 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>very socially appropriate</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p><U>Action 2</U>: the charity <i>Feed the Children</i> is provided with $3.00 and a participant decides <b>to take</b> $0.50 from the charity. </p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>very socially inappropriate</i>
+                </div>
+                {{ for choice in form.SNE_9 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>very socially appropriate</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <p><U>Action 3</U>: the charity <i>Feed the Children</i> is provided with $3.00 and a participant decides <b>to take</b> $1.00 from the charity. </p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>very socially inappropriate</i>
+                </div>
+                {{ for choice in form.SNE_10 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>very socially appropriate</i>
+                </div>
+            </div>
+
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p><U>Action 4</U>: the charity <i>Feed the Children</i> is provided with $3.00 and a participant decides <b>to take</b> $1.50 from the charity. </p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>very socially inappropriate</i>
+                </div>
+                {{ for choice in form.SNE_11 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>very socially appropriate</i>
+                </div>
+            </div>
+
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <p><U>Action 5</U>: the charity <i>Feed the Children</i> is provided with $3.00 and a participant decides <b>to take</b> $2.00 from the charity. </p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>very socially inappropriate</i>
+                </div>
+                {{ for choice in form.SNE_12 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>very socially appropriate</i>
+                </div>
+            </div>
+
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p><U>Action 6</U>: the charity <i>Feed the Children</i> is provided with $3.00 and a participant decides <b>to take</b> $2.50 from the charity. </p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>very socially inappropriate</i>
+                </div>
+                {{ for choice in form.SNE_13 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>very socially appropriate</i>
+                </div>
+            </div>
+
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p><U>Action 7</U>: the charity <i>Feed the Children</i> is provided with $3.00 and a participant decides <b>to take</b> $3.00 from the charity. </p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>very socially inappropriate</i>
+                </div>
+                {{ for choice in form.SNE_14 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>very socially appropriate</i>
+                </div>
+            </div>
+
+        </td>
+    </tr>
+
+
+</table>
+
+<br>
+
+<div style="text-align: center">
+    <h4><U>Set 2</U></h4>
+</div>
+
+<table class="table table-sm table-striped" style="width: 945px;">
+
+    <tr>
+        <td>
+
+            <p><U>Action 1</U>: the participant is provided with $3.00 and the participant decides <b>to give</b> $0.00 to the charity <i>Feed the Children</i>.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>very socially inappropriate</i>
+                </div>
+
+                {{ for choice in form.SNE_1 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>very socially appropriate</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p><U>Action 2</U>: the participant is provided with $3.00 and the participant decides <b>to give</b> $0.50 to the charity <i>Feed the Children</i>.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>very socially inappropriate</i>
+                </div>
+                {{ for choice in form.SNE_2 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>very socially appropriate</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <p><U>Action 3</U>: the participant is provided with $3.00 and the participant decides <b>to give</b> $1.00 to the charity <i>Feed the Children</i>.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>very socially inappropriate</i>
+                </div>
+                {{ for choice in form.SNE_3 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>very socially appropriate</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p><U>Action 4</U>: the participant is provided with $3.00 and the participant decides <b>to give</b> $1.50 to the charity <i>Feed the Children</i>.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>very socially inappropriate</i>
+                </div>
+                {{ for choice in form.SNE_4 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>very socially appropriate</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <p><U>Action 5</U>: the participant is provided with $3.00 and the participant decides <b>to give</b> $2.00 to the charity <i>Feed the Children</i>.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>very socially inappropriate</i>
+                </div>
+                {{ for choice in form.SNE_5 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>very socially appropriate</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <p><U>Action 6</U>: the participant is provided with $3.00 and the participant decides <b>to give</b> $2.50 to the charity <i>Feed the Children</i>. </p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>very socially inappropriate</i>
+                </div>
+                {{ for choice in form.SNE_6 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>very socially appropriate</i>
+                </div>
+
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <p><U>Action 7</U>: the participant is provided with $3.00 and the participant decides <b>to give</b> $3.00 to the charity <i>Feed the Children</i>. </p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>very socially inappropriate</i>
+                </div>
+                {{ for choice in form.SNE_7 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>very socially appropriate</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+{{ endif }}
+{{ next_button }}
+
+{{ endblock }}

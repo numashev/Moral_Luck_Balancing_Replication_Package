@@ -1,0 +1,35 @@
+{% block title %}
+
+
+    <b>CONSENT FORM</b>
+
+{% endblock %}
+
+{% block content %}
+
+<p><b>Title of Project:</b>  Experimental Economics Project on Decision Making <br>Project Number: 38787</p>
+
+<p><b>Name of Researchers:</b><br>
+Professor Phillip Grossman, Monash University<br>
+Dr. Alexandros Karakostas, ESSCA<br>
+Nicholas Umashev, University of Queensland</p>
+
+<ol>
+    <li>I have read the Explanatory Statement  regarding this project, and I agree to participate in the project named above.</li>
+<li>I acknowledge that:</li>
+    <ul>
+        <li>(a) I am free to withdraw from this research project at any time during the experiment, however if I decide to withdraw I will forgo my earnings from the experiment.</li>
+<li>(b) Any data collected during the experiment will be recorded only by an anonymous subject number, and all participants shall remain anonymous.</li>
+ <li>(c) For the purposes of payment, I may need to provide my personal details to Prolific. This data is collected solely for accounting purposes and will not be connected in any way to the decisions I make in the experiment. I understand that my personal details will not be associated in any way with the research findings, and that my contribution will be completely confidential.</li>
+    </ul>
+</ol>
+
+<button   class="btn btn-success" name= "participate" value={{ C.accept }} >I agree</button>
+<button  onclick="return confirm('If you disagree, the experience is over.');" class="btn btn-danger" name= "participate" value={{ C.refus }} >I disagree</button>
+
+{{ endblock }}
+
+{{ block scripts }}
+
+
+{{ endblock }}

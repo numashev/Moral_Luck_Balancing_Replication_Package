@@ -1,0 +1,531 @@
+{{ block styles }}
+<style>
+    .statement {
+        font-size: 14px;
+    }
+</style>
+{{ endblock }}
+
+{{ block title }}
+<div style="text-align: center; font-weight: normal">Quiz 3</div>
+{{ endblock }}
+{{ block content }}
+
+
+<div class="card bg-light text-justify mb-3">
+    <label style="text-align: justify">
+        <div class="card-body">
+            <p class="card-text">
+                Please indicate how well the following statements applied to you <b>over the past week</b>, choosing whether the statement:
+            <p>
+            <ol><i>
+                    <li>did not apply to me all</li>
+                    <li>applied to me to some degree or some of the time
+                    </li>
+                    <li>applied to me to a considerable degree or a good part of time</li>
+                    <li>applied to me very much or most of the time.</li>
+                </i></p>
+            </ol>
+            There are no right or wrong answer, do not spend too much time on any statement.
+        </div>
+    </label>
+</div>
+
+<table class="table table-sm table-striped" style="width: 945px;">
+
+    <tr>
+        <td>
+            <p>1. I found it hard to wind down.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>did not apply to me all</i>
+                </div>
+
+
+                {{ for choice in form.DASS21_1 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>applied to me very much or most of the time.</i>
+                </div>
+
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p>2. I was aware of dryness of my mouth.</p>
+            <div style="display: flex">
+
+                <div class="statement">
+                    <i>did not apply to me all</i>
+                </div>
+                {{ for choice in form.DASS21_2 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>applied to me very much or most of the time.</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p>3. I couldn’t seem to experience any positive feeling at all.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>did not apply to me all</i>
+                </div>
+                {{ for choice in form.DASS21_3 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>applied to me very much or most of the time.</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p>4. I experienced breathing difficulty (e.g., excessively rapid breathing, breathlessness in the absence of physical exertion).</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>did not apply to me all</i>
+                </div>
+                {{ for choice in form.DASS21_4 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>applied to me very much or most of the time.</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p>5. I found it difficult to work up the initiative to do things.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>did not apply to me all</i>
+                </div>
+                {{ for choice in form.DASS21_5 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>applied to me very much or most of the time.</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p>6. I tended to over-react to situations.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>did not apply to me all</i>
+                </div>
+                {{ for choice in form.DASS21_6 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>applied to me very much or most of the time.</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p>7. I experienced trembling (e.g., in the hands).</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>did not apply to me all</i>
+                </div>
+                {{ for choice in form.DASS21_7 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>applied to me very much or most of the time.</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p>8. I felt that I was using a lot of nervous energy.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>did not apply to me all</i>
+                </div>
+                {{ for choice in form.DASS21_8 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>applied to me very much or most of the time.</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p>9. I was worried about situations in which I might panic and make a fool of myself.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>did not apply to me all</i>
+                </div>
+                {{ for choice in form.DASS21_9 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>applied to me very much or most of the time.</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p>10. I felt that I had nothing to look forward to.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>did not apply to me all</i>
+                </div>
+                {{ for choice in form.DASS21_10 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>applied to me very much or most of the time.</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p>11. I found myself getting agitated.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>did not apply to me all</i>
+                </div>
+                {{ for choice in form.DASS21_11 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>applied to me very much or most of the time.</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p>12. I found it difficult to relax.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>did not apply to me all</i>
+                </div>
+                {{ for choice in form.DASS21_12 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>applied to me very much or most of the time.</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p>13. I felt down-hearted and blue.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>did not apply to me all</i>
+                </div>
+                {{ for choice in form.DASS21_13 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>applied to me very much or most of the time.</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p>14. I was intolerant of anything that kept me from getting on with what I was doing.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>did not apply to me all</i>
+                </div>
+                {{ for choice in form.DASS21_14 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>applied to me very much or most of the time.</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p>15. I felt I was close to panic.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>did not apply to me all</i>
+                </div>
+
+                {{ for choice in form.DASS21_15 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>applied to me very much or most of the time.</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p>16. I was unable to become enthusiastic about anything.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>did not apply to me all</i>
+                </div>
+
+                {{ for choice in form.DASS21_16 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>applied to me very much or most of the time.</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p>17. I felt I wasn’t worth much as a person.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>did not apply to me all</i>
+                </div>
+
+                {{ for choice in form.DASS21_17 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>applied to me very much or most of the time.</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p>18. I felt that I was rather touchy.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>did not apply to me all</i>
+                </div>
+                {{ for choice in form.DASS21_18 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>applied to me very much or most of the time.</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p>19. I was aware of the action of my heart in the absence of physical exertion (e.g., sense of heart rate increase, heart missing a beat). </p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>did not apply to me all</i>
+                </div>
+                {{ for choice in form.DASS21_19 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>applied to me very much or most of the time.</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p>20. I felt scared without any good reason.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>did not apply to me all</i>
+                </div>
+                {{ for choice in form.DASS21_20 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>applied to me very much or most of the time.</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p>21. I felt that life was meaningless. </p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>did not apply to me all</i>
+                </div>
+                {{ for choice in form.DASS21_21 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>applied to me very much or most of the time.</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+
+
+{{ next_button }}
+
+{{ endblock }}

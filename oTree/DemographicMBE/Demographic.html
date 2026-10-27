@@ -1,0 +1,36 @@
+{{ block title }}
+<div style="text-align: center; font-weight: normal">
+    Demographic Information</div>
+{{ endblock }}
+{{ block content }}
+
+
+<table class="table table-sm table-striped" style="width: 945px;">
+    <tr>
+        <td>{% formfield player.age %}</td>
+    </tr>
+    <tr>
+        <td>{% formfield player.sexe %}</td>
+    </tr>
+    <tr>
+        <td>{% formfield player.english %}</td>
+    </tr>
+    <tr>
+        <td>{% formfield player.student %}</td>
+    </tr>
+    <tr>
+        <td>{% formfield player.economy %}</td>
+    </tr>
+    <tr>
+        <td>{% formfield player.nationality %}</td>
+    </tr>
+    <tr>
+        <td>{% formfield player.comment %}</td>
+    </tr>
+
+
+</table>
+
+{{ next_button }}
+
+{{ endblock }}

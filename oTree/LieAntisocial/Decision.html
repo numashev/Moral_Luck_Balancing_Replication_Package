@@ -1,0 +1,144 @@
+{{ block styles }}
+<style>
+    .center {
+        margin-left: auto;
+        margin-right: auto;
+        width: 800px;
+    }
+
+
+    input {
+        padding: 3px;
+        border: 1px solid #808080;
+        border-radius: 5px;
+        width: 200px;
+        box-shadow: 1px 1px 2px #808080 inset;
+    }
+</style>
+{{ endblock }}
+
+{{ block title }}
+<div style="text-align: center; font-weight: normal">Part 1
+</div>
+
+{{ endblock }}
+
+{{ block content }}
+<div class="card bg-light">
+    <label style="text-align: justify">
+        <div class="card-body">
+
+
+            <p>In Part 1, you determine your own payoff by throwing two dice as soon as you are asked to. If you do not have physical dice, you can type “roll a six-sided die” into google to roll dice digitally.</p>
+
+            <p>Your two dice throws decide how much you receive based on their sum. You can see the exact payoff from the following chart.
+            </p>
+
+            <table class="table-bordered center">
+                <thead>
+                    <th>Sum of two dice thrown:</th>
+                    <th>7</th>
+                    <th>6 or 8</th>
+                    <th>5 or 9</th>
+                    <th>4 or 10</th>
+                    <th>3 or 11</th>
+                    <th>2 or 12</th>
+
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Resulting payoff:</td>
+                        <td>$0.50</td>
+                        <td>$1.00</td>
+                        <td>$1.50</td>
+                        <td>$2.00</td>
+                        <td>$2.50</td>
+                        <td>$3.00</td>
+                    </tr>
+                </tbody>
+
+            </table>
+            <br>
+            You may of course throw both the dice more than once to make sure that the dice are working properly. However, only the first throw of each die counts.
+
+        </div>
+    </label>
+</div>
+<br>
+<p>Please throw the first and second die now (or if you only have one die, please throw it twice) and enter the sum of the two die throws.</p>
+
+<table class="table table-sm table-striped" style="width: 945px;" border="0 px solid;">
+    <tr>
+        <td>First die number thrown: </td>
+        <td><input type="text" id="FirstDice" name="FirstDice" onChange="computeResult();computePayoff();" value=""></td>
+    </tr>
+    <tr>
+        <td>Second die number thrown: </td>
+        <td><input type="text" id="SecondDice" name="SecondDice" onChange="computeResult();computePayoff();" value=""></td>
+    </tr>
+
+    <tr>
+        <td>Sum of both dice: </td>
+        <td><input type="text" id="SumDice" value="" disabled>
+        </td>
+    </tr>
+    <tr>
+        <td>Resulting payoff: </td>
+        <td><input type="text" id="payoff" name="payoff" disabled></td>
+    </tr>
+
+
+</table>
+
+<br />
+
+{{ formfield_errors 'FirstDice' }}
+{{ formfield_errors 'SecondDice' }}
+
+
+{{ next_button }}
+
+{{ endblock }}
+
+
+{{ block scripts }}
+
+<script type="text/javascript">
+
+    function computeResult() {
+        var result = document.getElementById('SumDice');
+
+        var value1 = document.getElementById('FirstDice').value;
+        var value2 = document.getElementById('SecondDice').value;
+
+        if (testInt(value1) && testInt(value2)) {
+            result.value = parseInt(value1) + parseInt(value2);
+        }
+        else {
+
+        }
+
+    }
+    function testInt(value) {
+        return value == parseInt(value);
+    }
+
+    function computePayoff() {
+        if (document.getElementById('SumDice').value == 7) { document.getElementById('payoff').value = "$0.50"; }
+        if (document.getElementById('SumDice').value == 6) { document.getElementById('payoff').value = "$1.00"; }
+        if (document.getElementById('SumDice').value == 8) { document.getElementById('payoff').value = "$1.00"; }
+        if (document.getElementById('SumDice').value == 5) { document.getElementById('payoff').value = "$1.50"; }
+        if (document.getElementById('SumDice').value == 9) { document.getElementById('payoff').value = "$1.50"; }
+        if (document.getElementById('SumDice').value == 4) { document.getElementById('payoff').value = "$2.00"; }
+        if (document.getElementById('SumDice').value == 10) { document.getElementById('payoff').value = "$2.00"; }
+        if (document.getElementById('SumDice').value == 3) { document.getElementById('payoff').value = "$2.50"; }
+        if (document.getElementById('SumDice').value == 11) { document.getElementById('payoff').value = "$2.50"; }
+        if (document.getElementById('SumDice').value == 2) { document.getElementById('payoff').value = "$3.00"; }
+        if (document.getElementById('SumDice').value == 12) { document.getElementById('payoff').value = "$3.00"; }
+
+    }
+
+
+</script>
+
+{{ endblock }}

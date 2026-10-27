@@ -1,0 +1,58 @@
+{{ block styles }}
+<style>
+    p1 {
+        text-align: center;
+    }
+
+    div.containerB {
+        margin: auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+</style>
+{{ endblock }}
+
+{{ block title }}
+<div style="text-align: center; font-weight: normal">Part 1
+</div>
+{{ endblock }}
+
+{{ block content }}
+<div class="card bg-light">
+    <label style="text-align: justify">
+        <div class="card-body">
+            <p>
+                In Part 1, the charity <b>Feed the Children</b> is provided with $3.00 and you must decide how much of this you would like <b>to take</b> from the charity and how much you would like the charity to keep.
+            </p>
+            <p><i>Feed the Children</i> is a US-based non-profit organization focused on alleviating childhood hunger. The charity provides food, essentials, education supplies and disaster relief to those in need across the Unites States and in 10 countries around the world. Their mission is:</p>
+
+
+            <div style="text-align: center">
+                <i>Providing hope and resources for those without life’s essentials</i>
+            </div>
+            <br>
+            <p>Evidence of charitable donations will be uploaded in: <a href=https://sites.google.com/view/alexandroskarakostas>https://sites.google.com/view/alexandroskarakostas</a> within 2 - 3 days after all experimental sessions have been completed. Please note that your decision will be kept private.</p>
+
+        </div>
+    </label>
+</div>
+<br>
+Please enter the amount you would like <b>to take</b> from the charity <b>Feed the Children</b> out of the $3.00 they have been provided:
+
+
+<div class="card-body text-dark">
+    <div class='containerB'>
+
+        {{ formfields }}
+        <p id="description">out of $3.00.</p>
+
+    </div>
+</div>
+
+
+
+{{ next_button }}
+
+
+{{ endblock }}

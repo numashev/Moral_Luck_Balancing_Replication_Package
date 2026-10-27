@@ -1,0 +1,63 @@
+{{ block style }}
+<style>
+    table,
+    th,
+    td {
+        border: 1px solid;
+        text-align: center;
+    }
+</style>
+{{ endblock }}
+
+
+{{ block title }}
+<div style="text-align: center; font-weight: normal">Part 1 - Instructions</div>
+
+{{ endblock }}
+
+{{ block content }}
+<div class="card bg-light">
+    <label style="text-align: justify">
+        <div class="card-body">
+
+
+            <p>In Part 1, you will receive a lottery ticket with a number between 1 and 180. The number on your lottery ticket will decide how much you receive. Please note that each lottery ticket has an equal probability of being drawn.</p>
+            <p>You can see the exact payoff from the following chart. </p>
+
+            <table class="table">
+                <thead>
+                    <th>Lottery Ticket:</th>
+                    <th>1-20</th>
+                    <th>21-60</th>
+                    <th>61-95</th>
+                    <th>96-121</th>
+                    <th>122-151</th>
+                    <th>152-180</th>
+
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Resulting payoff:</td>
+                        <td>$0.50</td>
+                        <td>$1.00</td>
+                        <td>$1.50</td>
+                        <td>$2.00</td>
+                        <td>$2.50</td>
+                        <td>$3.00</td>
+                    </tr>
+                </tbody>
+
+            </table>
+
+
+        </div>
+    </label>
+</div>
+&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+&nbsp;&nbsp;&nbsp;&nbsp;
+<br>
+
+
+{{ next_button }}
+{{ endblock }}

@@ -1,0 +1,30 @@
+{{ block title }}
+<div style="text-align: center; font-weight: normal">End</div>
+
+{{ endblock }}
+{{ block content }}
+
+<div class="card bg-light text-justify mb-3">
+    <div class="card-body">
+        <p class="card-text">
+            Thank you for participating in this experiment!
+
+        <p>In part 1 you stated that the first die result is {{participant.FirstDice}} and the second die result is {{participant.SecondDice }}.
+            As a result, your earnings for part 1 are {{ participant.payoffDice }}.</p>
+
+        <p>In part 2, you chose to take {{ participant.amount_take }} out of $3.00 from the charity. Evidence of charitable donations will be uploaded in <a href=https://sites.google.com/view/alexandroskarakostas>https://sites.google.com/view/alexandroskarakostas</a> within 2 - 3 days after all experimental sessions have been completed.
+            As a result, your earnings for part 2 are {{ participant.payoffCharity }}.
+        </p>
+        <p>Therefore, your total earnings from part 1 and part 2 are: <br>
+        <div style="text-align: center">{{ participant.payoff }}</div>
+        </p>
+
+        <p>You will receive these funds within standard bank processing cut-off times.</p>
+
+        <p>Your earnings from part 3 will be determined after all experimental data has been collected. We will contact you to notify you of your part 3 earnings and you will receive these funds within standard bank processing cut-off times.</p>
+    </div>
+</div>
+
+<button class="otree-btn-next btn btn-primary">Next</button>
+
+{{ endblock }}

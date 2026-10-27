@@ -1,0 +1,683 @@
+{{ block style }}
+<style>
+    .statement {
+        font-size: 14px;
+    }
+</style>
+{{ endblock }}
+
+{{ block title }}
+<div style="text-align: center; font-weight: normal">Quiz 1
+</div>
+{{ endblock }}
+{{ block content }}
+
+<div class="card bg-light text-justify mb-3">
+    <label style="text-align: justify">
+        <div class="card-body">
+            <p class="card-text">
+                Please indicate how much you <b>agree with each of the following statements</b>, choosing whether you:
+            <p>
+            <ol>
+                <i>
+                    <li>strongly disagree</li>
+                    <li> disagree</li>
+                    <li>neither agree nor disagree</li>
+                    <li>agree</li>
+                    <li>strongly agree</li>
+                </i>
+            </ol>
+            </p>
+            There are no right or wrong answers, do not spend too much time on any statement.
+
+        </div>
+    </label>
+</div>
+
+<table class="table table-sm table-striped" style="width: 945px;">
+    <div style="text-align: center">
+        <h4><U>Statement set 1:</U></h4>
+    </div>
+
+    <tr>
+        <td>
+
+            <p>1. It’s not wise to tell your secrets.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>strongly disagree</i>
+                </div>
+                {{ for choice in form.Quiz1_1 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>strongly agree</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p>2. I like to use clever manipulation to get my way.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>strongly disagree</i>
+                </div>
+                {{ for choice in form.Quiz1_2 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>strongly agree</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <p>3. Whatever it takes, you must get the important people on your side.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>strongly disagree</i>
+                </div>
+                {{ for choice in form.Quiz1_3 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>strongly agree</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p>4. Avoid direct conflict with others because they may be useful in the future.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>strongly disagree</i>
+                </div>
+                {{ for choice in form.Quiz1_4 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>strongly agree</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <p>5. It’s wise to keep track of information that you can use against people later.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>strongly disagree</i>
+                </div>
+                {{ for choice in form.Quiz1_5 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>strongly agree</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <p>6. You should wait for the right time to get back at people.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>strongly disagree</i>
+                </div>
+                {{ for choice in form.Quiz1_6 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>strongly agree</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <p>7. There are things you should hide from other people to preserve your reputation.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>strongly disagree</i>
+                </div>
+                {{ for choice in form.Quiz1_7 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>strongly agree</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p>8. Make sure your plans benefit yourself, not others.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>strongly disagree</i>
+                </div>
+                {{ for choice in form.Quiz1_8 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>strongly agree</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p>9. Most people can be manipulated. </p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>strongly disagree</i>
+                </div>
+                {{ for choice in form.Quiz1_9 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>strongly agree</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+</table>
+<br>
+<table class="table table-sm table-striped" style="width: 945px;">
+    <div style="text-align: center">
+        <h4><U>Statement set 2:</U></h4>
+    </div>
+    <tr>
+        <td>
+
+            <p>1. People see me as a natural leader. </p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>strongly disagree</i>
+                </div>
+                {{ for choice in form.Quiz1_10 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>strongly agree</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p>2. I hate being the centre of attention.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>strongly disagree</i>
+                </div>
+                {{ for choice in form.Quiz1_11 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>strongly agree</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <p>3. Many group activities tend to be dull without me.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>strongly disagree</i>
+                </div>
+                {{ for choice in form.Quiz1_12 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>strongly agree</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p>4. I know that I am special because everyone keeps telling me so.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>strongly disagree</i>
+                </div>
+                {{ for choice in form.Quiz1_13 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>strongly agree</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <p>5. I like to get acquainted with important people.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>strongly disagree</i>
+                </div>
+                {{ for choice in form.Quiz1_14 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>strongly sagree</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <p>6. I feel embarrassed if someone compliments me.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>strongly disagree</i>
+                </div>
+                {{ for choice in form.Quiz1_15 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>strongly agree</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <p>7. I have been compared to famous people.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>strongly disagree</i>
+                </div>
+                {{ for choice in form.Quiz1_16 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>strongly agree</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p>8. I am an average person.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>strongly disagree</i>
+                </div>
+                {{ for choice in form.Quiz1_17 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>strongly agree</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p>9. I insist on getting the respect I deserve.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>strongly disagree</i>
+                </div>
+                {{ for choice in form.Quiz1_18 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>strongly agree</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+</table>
+<br>
+<table class="table table-sm table-striped" style="width: 945px;">
+    <div style="text-align: center">
+        <h4><U>Statement set 3:</U></h4>
+    </div>
+    <tr>
+        <td>
+
+            <p>1. I like to get revenge on authorities.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>strongly disagree</i>
+                </div>
+                {{ for choice in form.Quiz1_19 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>strongly agree</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p>2. I avoid dangerous situations.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>strongly disagree</i>
+                </div>
+                {{ for choice in form.Quiz1_20 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>strongly agree</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <p>3. Payback needs to be quick and nasty. </p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>strongly disagree</i>
+                </div>
+                {{ for choice in form.Quiz1_21 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>strongly agree</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p>4. People often say I’m out of control. </p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>strongly disagree</i>
+                </div>
+                {{ for choice in form.Quiz1_22 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>strongly agree</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <p>5. It’s true that I can be mean to others.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>strongly disagree</i>
+                </div>
+                {{ for choice in form.Quiz1_23 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>strongly agree</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <p>6. People who mess with me always regret it. </p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>strongly disagree</i>
+                </div>
+                {{ for choice in form.Quiz1_24 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>strongly agree</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <p>7. I have never gotten in trouble with the law.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>strongly disagree</i>
+                </div>
+                {{ for choice in form.Quiz1_25 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>strongly agree</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p>8. I enjoy having sex with people I hardly know.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>strongly disagree</i>
+                </div>
+                {{ for choice in form.Quiz1_26 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>strongly agree</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+    <tr>
+        <td>
+            <p>9. I’ll say anything to get what I want.</p>
+            <div style="display: flex">
+                <div class="statement">
+                    <i>strongly disagree</i>
+                </div>
+                {{ for choice in form.Quiz1_27 }}
+                <div style="flex: 1; text-align: center">
+                    {{ choice }}
+                    <br>
+                    <span style="text-align: center">{{ choice.label }}</span>
+
+                    <br>
+
+                </div>
+                {{ endfor }}
+                <div class="statement">
+                    <i>strongly agree</i>
+                </div>
+            </div>
+        </td>
+    </tr>
+
+</table>
+
+
+{{ next_button }}
+
+{{ endblock }}

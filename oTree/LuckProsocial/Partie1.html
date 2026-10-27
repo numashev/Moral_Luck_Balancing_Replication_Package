@@ -1,0 +1,70 @@
+{{ block style }}
+<style>
+    table,
+    th,
+    td {
+        border: 1px solid;
+        text-align: center;
+    }
+</style>
+{{ endblock }}
+
+{{ block title }}
+<div style="text-align: center; font-weight: normal">Part 1
+</div>
+{{ endblock }}
+
+{{ block content }}
+<div class="card bg-light">
+    <label style="text-align: justify">
+        <div class="card-body">
+
+
+            The number on your lottery ticket is:
+            <h5><b>
+                    <div style="text-align: center">
+                        {{ participant.ticket }}</div>
+                </b></h5>
+
+            <p>Therefore, based the below chart, your resulting payoff is:
+                {{ player.payoffLuck }}</p>
+
+
+            <table class="table">
+                <thead>
+                    <th>Lottery Ticket:</th>
+                    <th>1-21</th>
+                    <th>22-60</th>
+                    <th>61-102</th>
+                    <th>103-136</th>
+                    <th>137-160</th>
+                    <th>161-180</th>
+
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Resulting payoff:</td>
+                        <td>$0.50</td>
+                        <td>$1.00</td>
+                        <td>$1.50</td>
+                        <td>$2.00</td>
+                        <td>$2.50</td>
+                        <td>$3.00</td>
+                    </tr>
+                </tbody>
+
+            </table>
+
+
+        </div>
+
+    </label>
+
+</div>
+
+
+<br>
+
+
+{{ next_button }}
+{{ endblock }}
