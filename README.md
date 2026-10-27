@@ -6,7 +6,7 @@ Replication package for *Moral and Luck Balancing* (Grossman, Karakostas, and Um
 
 - `Data/` — the experimental data, one workbook per session (`Session1.xlsx` to `Session26.xlsx`).
 - `Data Analysis.qmd` — the complete analysis: data preparation, descriptive statistics, figures, hypothesis tests, robustness checks, and the tables quoted in the paper.
-- `Writing/` — output folder. Figures are exported to `Writing/Figures/` and LaTeX table fragments to `Writing/Tables/`. Both subfolders are created automatically when the document is rendered.
+- `Writing/` — output folder and manuscript source. Figures are exported to `Writing/Figures/` and LaTeX table fragments to `Writing/Tables/`. Both subfolders are created automatically when the document is rendered. `Writing/Moral_Balancing_Combined.tex` is the combined manuscript and online appendix source; `Writing/sample.bib` and the static appendix screenshots are included so it can be compiled directly.
 
 ## Requirements
 
@@ -23,7 +23,7 @@ install.packages(c(
 ))
 ```
 
-A LaTeX installation (for example TinyTeX) is only needed if you also want to render the document to PDF.
+A LaTeX installation with `latexmk` and `biber` (for example a full TeX Live installation) is needed to render the analysis document to PDF or to compile the manuscript.
 
 ## Reproducing the results
 
@@ -44,6 +44,17 @@ A LaTeX installation (for example TinyTeX) is only needed if you also want to re
    - `Writing/Figures/*.pdf` — all figures (for example `MoralBalancing_Graph.pdf`, `LuckBalancing_Graph.pdf`, `dicefreq.pdf`, `poweranal.pdf`).
    - `Writing/Tables/*.tex` — LaTeX table bodies for the regression tables, the Fisher randomization tests, and the multiple-testing correction.
    - `Data/AppendedData-DataFinale.rds` — the cleaned analysis dataset created by the *Dataset Generation* section.
+
+## Compiling the manuscript
+
+After rendering `Data Analysis.qmd`, compile the combined manuscript and appendix from the `Writing` folder:
+
+```sh
+cd Writing
+latexmk -pdf Moral_Balancing_Combined.tex
+```
+
+This produces `Writing/Moral_Balancing_Combined.pdf`. The source uses the generated tables in `Writing/Tables/`, the generated figures plus static screenshots in `Writing/Figures/`, and the bibliography in `Writing/sample.bib`.
 
 ## Notes
 
