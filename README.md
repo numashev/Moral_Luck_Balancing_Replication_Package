@@ -50,7 +50,7 @@ A LaTeX installation (for example TinyTeX) is only needed if you also want to re
 - Run the document top to bottom. The *Data Analysis* section loads `Data/AppendedData-DataFinale.rds`, which is written by the preceding *Dataset Generation* section, so the chunks cannot be run out of order.
 - Re-rendering overwrites the generated figures, tables, `.rds` file, and output document.
 - The permutation-based Fisher randomization tests are seeded (`set.seed(42)`). Point estimates and test statistics are deterministic; permutation p-values can differ in the last digits across R versions.
-- The *formatting* of the exported LaTeX table fragments depends on the render target. Rendering to PDF (or another LaTeX-based format) wraps numbers in `\num{...}` (siunitx), which is the format used by the manuscript; rendering to HTML produces the same estimates and standard errors without the `\num{...}` wrappers. Use `quarto render "Data Analysis.qmd" --to pdf` if you need the tables exactly as they appear in the paper.
+- The exported LaTeX table fragments use plain numeric cells (for example `0.046`), matching the manuscript. Rendering to PDF adds `\num{...}` (siunitx) wrappers internally, but the export step strips them, so HTML and PDF renders produce the same table bodies. Render to PDF only if you also need the PDF version of the analysis document.
 - If HTML rendering fails with a LaTeX-related message, make sure you are rendering `--to html`; LaTeX is only required for `--to pdf`.
 
 ## Pre-registration

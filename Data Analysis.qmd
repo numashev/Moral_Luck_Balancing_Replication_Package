@@ -78,6 +78,11 @@ save_tinytable_body <- function(tt, file) {
 
   tex_body <- tex[start:end]
 
+  # PDF renders wrap numeric cells in \num{...}; the manuscript table
+  # fragments use plain numbers. Strip the wrappers so HTML and PDF renders
+  # export identical table bodies.
+  tex_body <- gsub("\\\\num\\{([^{}]*)\\}", "\\1", tex_body)
+
   writeLines(tex_body, con = file)
 }
 ```
@@ -4889,11 +4894,8 @@ ggsave(
 The tests reported above evaluate each hypothesis separately under the Giving Frame and the Taking Frame. We define four testing families, one for each hypothesis (luck cleansing, luck licensing, moral cleansing, and moral licensing), with each family containing the Giving- and Taking-frame comparisons. To control the family-wise error rate within each hypothesis, we apply the Bonferroni correction separately within each two-test family; adjusted p-values are calculated as min(1, 2p) using unrounded p-values.
 
 ```{r}
-# Directories holding the LaTeX table fragments used by the manuscript
-mht_table_dirs <- c(
-  file.path(writing_dir, "Tables"),
-  file.path(root_dir, "Writing with old Template", "Tables")
-)
+# Directory holding the LaTeX table fragment used by the manuscript
+mht_table_dirs <- file.path(writing_dir, "Tables")
 
 save_mht_table <- function(table, file_name) {
   for (target_dir in mht_table_dirs) {
