@@ -4,7 +4,7 @@ author: "Philip Grossman, Alexandros Karakostas, Nicholas Umashev"
 format:
   html:
     toc: true
-    toc-depth: 3a
+    toc-depth: 3
     code-fold: true
   pdf:
     toc: true
@@ -109,10 +109,28 @@ base_theme <- theme_classic(base_size = 14) +
 ## Directories
 
 ```{r}
-root_dir <- "/Users/numashev/Documents/Research/Moral Balancing"
+# Root directory of the replication package (the folder containing the 'Data'
+# and 'Writing' folders). Rendering from the repository root makes
+# normalizePath(".") resolve to the correct location. If you run the chunks
+# interactively from another working directory, replace this with the absolute
+# path to the package folder.
+root_dir <- normalizePath(".")
 
 data_dir <- file.path(root_dir, "Data")
 writing_dir <- file.path(root_dir, "Writing")
+
+# The analysis exports figures and tables into these subfolders. Create them if
+# they are missing so that a fresh clone runs without manual setup.
+dir.create(
+  file.path(writing_dir, "Figures"),
+  recursive = TRUE,
+  showWarnings = FALSE
+)
+dir.create(
+  file.path(writing_dir, "Tables"),
+  recursive = TRUE,
+  showWarnings = FALSE
+)
 ```
 
 # Dataset Generation
